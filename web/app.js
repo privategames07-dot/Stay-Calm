@@ -10,6 +10,7 @@ let slots,options;
 try{slots=read('slots',[]);options=Object.assign({haptics:true,effects:true},read('settings',{}));}
 catch(e){document.body.textContent='저장된 기록을 열 수 없어. 앱을 다시 열어줘.';throw e;}
 let page='참기',selectedDay=Calm.key(new Date()),week=selectedDay,weekday=new Date().getDay();
+const comboWindowMs=5000;
 let combo=0,previous=0,comboSession='',comboTimer,noticeTimer,chosen='',homeKey='';
 const pages=['참기','기록','통계','시간표'],screen=$('#screen');
 const sheet=$('#sheet'),drawer=$('#drawer');
@@ -57,7 +58,7 @@ function record(s,d){
   const e=Calm.tap(s,d),list=events(e.day);list.push(e);
   if(!safely(()=>write('day.'+e.day,list)))return;
   const session=e.day+'|'+(s?.id||'');const now=d.getTime();
-  combo=session===comboSession&&now>=previous&&now-previous<=900?combo+1:1;comboSession=session;previous=now;
+  combo=session===comboSession&&now>=previous&&now-previous<comboWindowMs?combo+1:1;comboSession=session;previous=now;
   $('#amount').textContent=list.filter(v=>(v.slot?.id||'')===(s?.id||'')).length+'회';
   if(options.haptics)window.webkit?.messageHandlers?.feedback?.postMessage('tap');
   if(options.effects){
@@ -66,7 +67,7 @@ function record(s,d){
     $('#combo').textContent=combo>=3?'COMBO × '+combo:'';
     if(!matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.style.setProperty('--heat',String(combo>=3?Math.min(.22,.055+combo*.009):0));
   }
-  clearTimeout(comboTimer);comboTimer=setTimeout(resetCombo,920);
+  clearTimeout(comboTimer);comboTimer=setTimeout(resetCombo,comboWindowMs);
 }
 function field(label,control){const l=el('label',null,'field');l.append(document.createTextNode(label),control);return l;}
 function input(type,value){const n=el('input');n.type=type;n.value=value;return n;}
@@ -91,7 +92,7 @@ function edit(s){const c=controls(s);const save=btn('저장',()=>{try{const v=c.
 }
 function schedule(){
   screen.append(el('h1','시간표'));const actions=el('div',null,'actions');
-  actions.append(btn('에타 캡처 가져오기',startImport,'primary'),btn('수업 추가',()=>edit({name:'',weekday,start:540,end:600}),'secondary'));screen.append(actions);
+  actions.append(btn('시간표 캡처 가져오기',startImport,'primary'),btn('수업 추가',()=>edit({name:'',weekday,start:540,end:600}),'secondary'));screen.append(actions);
   const ds=el('div',null,'weekdays');[1,2,3,4,5,6,0].forEach(i=>ds.append(btn(Calm.days[i],()=>{weekday=i;render();},i===weekday?'sel':'')));screen.append(ds);
   const list=slots.filter(s=>s.weekday===weekday).sort((a,b)=>a.start-b.start);if(!list.length)screen.append(el('p','등록된 수업이 없어.','empty'));
   list.forEach(s=>{const row=btn('',()=>edit(s),'row');row.append(el('b',s.name),el('small',periodLabel(s)));screen.append(row);});
@@ -118,7 +119,7 @@ function statsView(){
 function settings(){
   screen.append(el('h1','설정'));const list=el('div',null,'list');
   [['haptics','탭 진동','버튼을 누를 때 가볍게 진동'],['effects','콤보 효과','붉은 배경, 브레이크 불티와 달성 불꽃놀이']].forEach(([k,title,desc])=>{const row=el('label',null,'row'),txt=el('span');txt.append(el('b',title),el('small',desc));const check=input('checkbox','');check.checked=options[k];check.onchange=()=>{const next={...options,[k]:check.checked};if(safely(()=>write('settings',next)))options=next;else check.checked=options[k];};row.append(txt,check);list.append(row);});
-  screen.append(list,sub('소리는 항상 꺼져 있어. 시간표와 기록은 이 기기에 저장돼.'),sub('stay calm! · 1.4 (5)'));
+  screen.append(list,sub('소리는 항상 꺼져 있어. 시간표와 기록은 이 기기에 저장돼.'),sub('stay calm! · 1.5 (6)'));
 }
 function startImport(){
   if(window.webkit?.messageHandlers?.timetable){window.webkit.messageHandlers.timetable.postMessage('pick');return;}
@@ -128,30 +129,87 @@ window.importFailure=s=>message(s);
 let pendingNames=null;
 window.receiveCourseNames=(token,groups)=>{
   if(!pendingNames||pendingNames.token!==token||!sheet.open)return;
-  const {draft}=pendingNames;pendingNames=null;
-  draft.forEach((s,i)=>{const title=courseTitle(groups[i]||[]);if(title)s.name=title;});
-  review(draft);
+  const {finish}=pendingNames;pendingNames=null;
+  finish(groups);
 };
 sheet.addEventListener('close',()=>{pendingNames=null;});
 function readForReview(frame,words,grid){
   const draft=scanCourses(frame,words,grid);
-  const native=window.webkit?.messageHandlers?.courseNames;
-  if(!native||!draft.length){review(draft);return;}
   const regions=draft.map(s=>{
     const day=(s.weekday+6)%7;
     const timeY=t=>grid.top+(grid.bottom-grid.top)*(t-grid.start)/(grid.end-grid.start);
     return [grid.edges[day],timeY(s.start),grid.edges[day+1],timeY(s.end)];
   });
+  recognizeNames(draft,regions,courseTitle);
+}
+function recognizeNames(draft,regions,titleFor){
+  const native=window.webkit?.messageHandlers?.courseNames;
+  if(!native||!draft.length){review(draft);return;}
   const token=Calm.uuid();
-  pendingNames={token,draft};
+  pendingNames={token,finish(groups){
+    draft.forEach((s,i)=>{const title=titleFor(groups[i]||[]);if(title)s.name=title;});
+    review(draft);
+  }};
   show('과목명 읽는 중',sub('수업 '+draft.length+'개의 이름을 확인하고 있어.'),btn('바로 수정하기',()=>{pendingNames=null;review(draft);},'secondary'));
   native.postMessage({token,regions});
+}
+function readSchoolPeriods(model){
+  const missing=model.periods.filter(p=>p.start===null);
+  const native=window.webkit?.messageHandlers?.courseNames;
+  if(!native||!missing.length){schoolImport(model);return;}
+  const token=Calm.uuid();
+  pendingNames={token,finish(groups){
+    missing.forEach((p,i)=>{p.start=SchoolTimetable.printedTime(groups[i]||[]);});
+    schoolImport(model);
+  }};
+  show('교시 시작 시각 읽는 중',btn('직접 확인',()=>{pendingNames=null;schoolImport(model);},'secondary'));
+  native.postMessage({token,regions:missing.map(p=>p.timeRect)});
+}
+function schoolImport({grade,periods}){
+  const level=select([['','학교급 선택'],['middle','중학교 · 45분'],['high','고등학교 · 50분']],grade);
+  const list=el('div'), times=[];
+  function update(){
+    const anchors=periods.map((p,i)=>times[i].dataset.edited&&times[i].value?{start:Calm.minutes(times[i].value)}:p);
+    const inferred=SchoolTimetable.starts(anchors,level.value);
+    periods.forEach((p,i)=>{
+      if(p.start===null&&!times[i].dataset.edited)
+        times[i].value=level.value?Calm.time(inferred[i]):'';
+    });
+  }
+  periods.forEach((p,i)=>{
+    const time=input('time',p.start===null?'':Calm.time(p.start));
+    time.oninput=()=>{time.dataset.edited='1';update();};
+    times.push(time);
+    list.append(field((i+1)+'교시'+(p.start===null?' · 추정 시각 확인':''),time));
+  });
+  update();level.onchange=update;
+  const hint=sub('사진의 교시 시작 시각을 확인해줘. 저장한 시간표는 매주 반복돼.');
+  show('컴시간 학생용 시간표',hint,field('학교급',level),list,btn('과목 확인',()=>{
+    if(!level.value){hint.textContent='중학교 또는 고등학교를 골라줘.';return;}
+    const length=SchoolTimetable.duration(level.value), draft=[],regions=[];
+    let previousEnd=0;
+    for(let i=0;i<periods.length;i++){
+      if(!periods[i].cells.length)continue;
+      const value=times[i].value, [h,m]=value.split(':').map(Number), start=h*60+m;
+      if(!value||!Number.isFinite(start)||start<previousEnd||start+length>1440){
+        hint.textContent=(i+1)+'교시 시작 시각을 확인해줘.';times[i].focus();return;
+      }
+      previousEnd=start+length;
+      for(const cell of periods[i].cells){
+        draft.push({weekday:cell.weekday,name:cell.name,start,end:start+length});
+        regions.push(cell.rect);
+      }
+    }
+    recognizeNames(draft,regions,SchoolTimetable.title);
+  },'primary'));
 }
 window.receiveTimetable=(src,words)=>{
   const img=new Image();img.alt='시간표 캡처';
   img.onerror=()=>message('이미지를 열 수 없어. 다른 캡처를 선택해줘.');
   img.onload=()=>{
-    const frame=timetablePixels(img),auto=detectGrid(frame,words);
+    const frame=timetablePixels(img),school=SchoolTimetable.detect(frame);
+    if(school){readSchoolPeriods(SchoolTimetable.read(frame,words,school));return;}
+    const auto=detectGrid(frame,words);
     function manual(){
       const hint=sub('월요일 첫 시간 칸의 왼쪽 위를 눌러줘.');let points=[];
       const wrap=el('div',null,'gridpic');wrap.append(img);

@@ -43,5 +43,11 @@ try{
   await evaluate('resetCombo()');
   const result=await evaluate(`(async()=>{const tap=document.querySelector('#tap');for(let i=0;i<100;i++)tap.click();const lifting=document.querySelector('.disc').classList.contains('lifting');tap.click();await new Promise(r=>setTimeout(r,760));return {lifting,title:document.querySelector('.combo-award').textContent,count:document.querySelector('#amount').textContent};})()`);
   assert.deepEqual(result,{lifting:true,title:'100 Combo!',count:'152회'});
+  await evaluate("resetCombo(); for(let i=0;i<3;i++)document.querySelector('#tap').click()");
+  await wait(4300);
+  assert.equal(await evaluate("document.querySelector('#tap').click();document.querySelector('#combo').textContent"),'COMBO × 4');
+  await wait(5250);
+  assert.equal(await evaluate("document.querySelector('#combo').textContent"),'');
+  assert.equal(await evaluate("document.querySelector('#tap').click();combo"),1);
   console.log('Passed: enlarged hitbox, 100th tap ascent, fireworks title, uninterrupted input.');
 }finally{ws?.close();app.kill('SIGKILL');await wait(250);await rm(dir,{recursive:true,force:true,maxRetries:3,retryDelay:100});}
