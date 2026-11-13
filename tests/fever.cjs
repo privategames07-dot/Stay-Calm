@@ -36,3 +36,13 @@ test('펫은 Lv0부터 Lv20까지 레벨과 같은 자동 클릭 횟수, 마지�
   }
   assert.equal(growth.score({pet:20},'pet',2),40);
 });
+
+test('펫 클릭 배수는 직접 클릭과 비용·상한을 공유하고 펫·피버에 곱한다',()=>{
+  const tap=growth.skills.find(s=>s.id==='tap'),power=growth.skills.find(s=>s.id==='petPower');
+  assert.equal(power.max,tap.max);
+  assert.deepEqual([0,1,2,3].map(l=>growth.cost(power,l)),[500,2000,5000,10000]);
+  assert.equal(growth.score({pet:0,petPower:4},'pet'),0);
+  assert.equal(growth.score({pet:20,petPower:4},'pet'),100);
+  assert.equal(growth.score({pet:20,petPower:99},'pet',14),1400);
+  assert.equal(growth.score({pet:20,petPower:4,tap:1},'manual'),2);
+});

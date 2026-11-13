@@ -1,7 +1,9 @@
 'use strict';
 const Growth=(()=>{
+  const clickPrices=[500,2000,5000,10000];
   const skills=[
-    {id:'tap',name:'다중클릭',max:4,prices:[500,2000,5000,10000]},
+    {id:'tap',name:'다중클릭',max:4,prices:clickPrices},
+    {id:'petPower',name:'펫 클릭 배수',max:4,prices:clickPrices},
     {id:'pet',name:'🐹 햄스터 펫',base:50,max:20},
     {id:'fever',name:'피버 계수 강화',base:60,max:10}
   ];
@@ -16,11 +18,12 @@ const Growth=(()=>{
     return base*skillFactor(level);
   }
   function score(levels,source,factor=1){
-    const base=source==='pet'?petLevel(levels.pet):1+tapLevel(levels.tap);
+    const base=source==='pet'?petLevel(levels.pet)*(1+tapLevel(levels.petPower)):1+tapLevel(levels.tap);
     return Math.round(base*factor*10)/10;
   }
   function detail(id,level){
     if(id==='tap')return '직접 탭당 '+(1+tapLevel(level))+'회';
+    if(id==='petPower')return '펫 클릭 ×'+(1+tapLevel(level));
     if(id==='pet')return '접속 중 5초마다 '+petLevel(level)+'회';
     return '500콤보부터 피버 계수 ×'+skillFactor(level).toFixed(1);
   }

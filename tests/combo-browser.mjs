@@ -128,7 +128,7 @@ try{
     const spent=before-creditBalance(inventory());
     go('참기');document.querySelector('#tap').click();
     const manual=events(Calm.key(new Date())).at(-1).count;
-    go('상점');document.querySelectorAll('#screen .row button')[1].click();
+    go('상점');document.querySelectorAll('#screen .row button')[2].click();
     await new Promise(r=>setTimeout(r,5200));
     const pet=events(Calm.key(new Date())).at(-1);
     return {spent,manual,source:pet.source,count:pet.count};
