@@ -19,12 +19,14 @@ try{
   function send(method,params={}){return new Promise((ok,no)=>{const id=++seq;pending.set(id,[ok,no]);ws.send(JSON.stringify({id,method,params}));});}
   async function evaluate(expression){const res=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(res.exceptionDetails)throw Error(res.exceptionDetails.exception?.description||res.exceptionDetails.text);return res.result.value;}
   await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:2,mobile:true});
+  await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
   await send('Page.navigate',{url:pathToFileURL(resolve('web/index.html')).href});
   for(let i=0;i<40&&!await evaluate("!!document.querySelector('#tap')");i++)await wait(100);
   const rect=await evaluate("(()=>{const r=document.querySelector('.disc').getBoundingClientRect();return {x:r.left-12,y:r.top+r.height/2};})()");
   for(const type of ['mousePressed','mouseReleased'])await send('Input.dispatchMouseEvent',{type,...rect,button:'left',clickCount:1});
   assert.equal(await evaluate("document.querySelector('#amount').textContent"),'1회');
-  const result=await evaluate(`(async()=>{const tap=document.querySelector('#tap');for(let i=1;i<100;i++)tap.click();const lifting=document.querySelector('.disc').classList.contains('lifting');tap.click();await new Promise(r=>setTimeout(r,760));return {lifting,title:document.querySelector('.combo-award').textContent,count:document.querySelector('#amount').textContent};})()`);
-  assert.deepEqual(result,{lifting:true,title:'100 Combo!',count:'101회'});
+  await evaluate('resetCombo()');
+  const result=await evaluate(`(async()=>{const tap=document.querySelector('#tap');for(let i=0;i<100;i++)tap.click();const lifting=document.querySelector('.disc').classList.contains('lifting');tap.click();await new Promise(r=>setTimeout(r,760));return {lifting,title:document.querySelector('.combo-award').textContent,count:document.querySelector('#amount').textContent};})()`);
+  assert.deepEqual(result,{lifting:true,title:'100 Combo!',count:'102회'});
   console.log('Passed: enlarged hitbox, 100th tap ascent, fireworks title, uninterrupted input.');
 }finally{ws?.close();app.kill('SIGKILL');await wait(250);await rm(dir,{recursive:true,force:true,maxRetries:3,retryDelay:100});}
