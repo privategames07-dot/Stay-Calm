@@ -11,10 +11,10 @@ try{slots=read('slots',[]);options=Object.assign({haptics:true,effects:true},rea
 catch(e){document.body.textContent='저장된 기록을 열 수 없어. 앱을 다시 열어줘.';throw e;}
 let page='참기',selectedDay=Calm.key(new Date()),week=selectedDay,weekday=new Date().getDay();
 const comboWindowMs=5000;
-const comboPauseMs=250;
+const comboPauseMs=1000;
 let countdownAnimation=null, countdownRevealTimer;
 let combo=0,previous=0,comboSession='',comboTimer,noticeTimer,chosen='',homeKey='';
-const pages=['참기','기록','통계','시간표'],screen=$('#screen');
+const pages=['참기','기록','통계','시간표','상점'],screen=$('#screen');
 const sheet=$('#sheet'),drawer=$('#drawer');
 function message(s){const n=$('#notice');n.textContent=s;n.style.display='block';clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>n.style.display='none',2400);}
 function safely(fn){try{fn();return true;}catch(e){message('저장하지 못했어. 저장 공간을 확인해줘.');return false;}}
@@ -37,7 +37,7 @@ function render(){
   document.body.classList.toggle('quiet',!options.effects);
   [...$('#tabs').children].forEach((b,i)=>{b.classList.toggle('active',pages[i]===page);if(pages[i]===page)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
   screen.className=page==='참기'?'home':'';screen.replaceChildren();screen.scrollTop=0;
-  if(page==='참기')home(now);else if(page==='시간표')schedule();else if(page==='기록')historyView();else if(page==='통계')statsView();else settings();
+  if(page==='참기')home(now);else if(page==='시간표')schedule();else if(page==='기록')historyView();else if(page==='통계')statsView();else if(page==='상점')shopView();else settings();
 }
 function current(d){const found=Calm.active(slots,d);const slot=found.length===1?found[0]:found.find(s=>s.id===chosen);return {found,slot};}
 function identify(d){const {found,slot}=current(d);return [Calm.key(d),found.map(s=>s.id).join(','),slot?.id].join('|');}
@@ -54,7 +54,7 @@ function home(d){
   const disc=el('span',null,'disc'),ink=el('span',null,'ink');disc.setAttribute('aria-hidden','true');disc.append(ink);target.append(disc);wrap.append(target,comboStatus);
   const counter=el('div',null,'counter');counter.append(el('small',slot?'이번 수업에서 참은 횟수':found.length?'수업 선택 후 기록':'오늘 수업 밖에서 참은 횟수'));const amount=el('b',events(Calm.key(d)).filter(e=>(e.slot?.id||'')===(slot?.id||'')).length+'회');amount.id='amount';counter.append(amount);
   if(!slots.length)counter.append(btn('시간표 등록',()=>go('시간표'),'small-link'));
-  screen.append(context,wrap,counter);comboVisual=ComboEffects.attach(wrap,disc);
+  screen.append(context,wrap,counter);comboVisual=ComboEffects.attach(wrap,disc,inventory().equipped[subjectKey(slot)]||'brake');
 }
 function pick(found,callback){show('어느 수업이야?',...found.map(s=>btn(s.name+' · '+periodLabel(s),()=>{close();callback(s);},'row')));}
 function onTap(){const d=new Date(),{found,slot}=current(d);
@@ -83,7 +83,7 @@ function record(s,d){
     countdownAnimation?.cancel();
     countdownAnimation=$('.combo-fill').animate(
       [{transform:'scaleX(1)'},{transform:'scaleX(0)'}],
-      {duration:comboWindowMs,easing:'linear',fill:'forwards'}
+      {duration:comboWindowMs-comboPauseMs,delay:comboPauseMs,easing:'linear',fill:'forwards'}
     );
     countdownAnimation.currentTime=comboWindowMs-remaining;
   }
@@ -149,7 +149,7 @@ function statsView(){
 function settings(){
   screen.append(el('h1','설정'));const list=el('div',null,'list');
   [['haptics','탭 진동','버튼을 누를 때 가볍게 진동'],['effects','콤보 효과','붉은 배경, 브레이크 불티와 달성 불꽃놀이']].forEach(([k,title,desc])=>{const row=el('label',null,'row'),txt=el('span');txt.append(el('b',title),el('small',desc));const check=input('checkbox','');check.checked=options[k];check.onchange=()=>{const next={...options,[k]:check.checked};if(safely(()=>write('settings',next)))options=next;else check.checked=options[k];};row.append(txt,check);list.append(row);});
-  screen.append(list,sub('소리는 항상 꺼져 있어. 시간표와 기록은 이 기기에 저장돼.'),sub('stay calm! · 1.8 (9)'));
+  screen.append(list,sub('소리는 항상 꺼져 있어. 시간표와 기록은 이 기기에 저장돼.'),sub('stay calm! · 1.9 (10)'));
 }
 function startImport(){
   if(window.webkit?.messageHandlers?.timetable){window.webkit.messageHandlers.timetable.postMessage('pick');return;}

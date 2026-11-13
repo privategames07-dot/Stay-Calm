@@ -52,16 +52,18 @@ try{
   })()`);
   const visible=()=>evaluate("getComputedStyle(document.querySelector('.combo-track')).visibility==='visible' && document.querySelector('.combo-track').offsetWidth>0");
   assert.equal(await visible(),false);
-  await wait(330);
+  await wait(650);
+  assert.equal(await visible(),false);
+  await wait(490);
   assert.equal(await visible(),true);
   let bar=await barState();
-  assert.ok(bar.aligned && bar.below && bar.fraction>.80);
+  assert.ok(bar.aligned && bar.below && bar.fraction>.90);
   await wait(3000);
   bar=await barState();
   assert.ok(bar.aligned && bar.fraction>.12 && bar.fraction<.55);
   assert.equal(await evaluate("document.querySelector('#tap').click();document.querySelector('#combo').textContent"),'COMBO × 4');
   assert.equal(await visible(),false);
-  await wait(350);
+  await wait(1150);
   assert.equal(await visible(),true);
   assert.ok((await barState()).fraction>.80);
   await wait(5250);
@@ -84,5 +86,24 @@ try{
   assert.deepEqual(await evaluate("read('slots',null)"),[]);
   assert.equal(await evaluate('JSON.stringify(events(Calm.key(new Date())))===window.historyBeforeReset'),true);
   assert.equal(await evaluate("document.querySelector('#screen').textContent.includes('등록된 수업이 없어.')"),true);
+  const shopChecks=await evaluate(`(()=>{
+    const a={...resetFixture[0],name:'미술'},b={...resetFixture[1],name:'국어'};
+    saveSlots([a,{...a,weekday:3},b]);
+    go('상점');
+    const buttons=()=>[...document.querySelectorAll('.shop-item button')];
+    const choose=key=>{const sel=document.querySelector('#screen select');sel.value=key;sel.onchange();};
+    choose(subjectKey(a));
+    const before=creditBalance(inventory());
+    buttons()[2].click();document.querySelector('#sheet .secondary').click();
+    const canceled=!Object.hasOwn(inventory().paid,'bolt');
+    buttons()[2].click();document.querySelector('#sheet .primary').click();buttons()[2].click();
+    const shared=inventory().equipped[subjectKey({...a,weekday:3})]==='bolt';
+    choose(subjectKey(b));const separate=buttons()[0].disabled;
+    const free=creditBalance(inventory())===before;
+    write('day.2020-01-01',Array(500).fill({}));
+    const funded=creditBalance(inventory());buttons()[1].click();
+    return {canceled,shared,separate,free,cost:funded-creditBalance(inventory()),choices:document.querySelector('#screen select').options.length};
+  })()`);
+  assert.deepEqual(shopChecks,{canceled:true,shared:true,separate:true,free:true,cost:500,choices:3});
   console.log('Passed: enlarged hitbox, 100th tap ascent, fireworks title, uninterrupted input.');
 }finally{ws?.close();app.kill('SIGKILL');await wait(250);await rm(dir,{recursive:true,force:true,maxRetries:3,retryDelay:100});}

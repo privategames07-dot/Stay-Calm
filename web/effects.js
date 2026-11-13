@@ -7,7 +7,7 @@ const ComboEffects = (() => {
     return {vx: -y*speed+x*outward, vy: x*speed+y*outward};
   }
 
-  function attach(wrap,disc) {
+  function attach(wrap,disc,theme='brake') {
     const canvas=document.createElement('canvas');
     canvas.className='ember-layer';canvas.setAttribute('aria-hidden','true');
     const banner=document.createElement('strong');
@@ -21,6 +21,45 @@ const ComboEffects = (() => {
     const ink=disc.querySelector('.ink');
     const hot=['#ffbd46','#ff8735','#f85625','#ffcc5b'];
     const festival=['#ffb632','#f96829','#ff497c','#d42e50','#ffdb66'];
+
+    const colors={
+      frost:['#a5e6ff','#3a99ce','#eefaff'],
+      bolt:['#b596ff','#7950f4','#d7e8ff'],
+      meteor:['#ffbc43','#ed7535','#fff4ab'],
+      aurora:['#26d5ad','#4eb9fc','#bc89ff']
+    };
+    const palette=colors[theme];
+    function themedRim(span,now){
+      const steps=Math.max(3,Math.ceil(70*coverage));
+      ctx.lineJoin='round';
+      for(let band=0;band<(theme==='aurora'?3:1);band++){
+        ctx.beginPath();ctx.strokeStyle=palette[band];ctx.lineWidth=theme==='bolt'?2.8:2;
+        for(let i=0;i<=steps;i++){
+          const a=phase+span*i/steps;
+          let r=radius;
+          if(theme==='aurora')r+=4*Math.sin(5*a+now*.002+band)+band*3;
+          if(theme==='bolt')r+=6*Math.sin(i*17+Math.floor(now/100)*2);
+          const x=width/2+r*Math.cos(a), y=height/2+r*Math.sin(a);
+          if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+      }
+    }
+    function drawMote(p,x,y){
+      ctx.beginPath();
+      if(p.shape==='frost'||p.shape==='aurora'){
+        const arms=p.shape==='frost'?6:4;
+        for(let i=0;i<arms;i++){
+          const a=i*tau/arms+p.age;
+          ctx.moveTo(x,y);ctx.lineTo(x+Math.cos(a)*3.8,y+Math.sin(a)*3.8);
+        }
+      }else if(p.shape==='bolt'){
+        ctx.moveTo(x-5,y+5);ctx.lineTo(x,y);ctx.lineTo(x-2,y-1);ctx.lineTo(x+3,y-7);
+      }else{
+        ctx.moveTo(x-p.vx*p.trail,y-p.vy*p.trail);ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+    }
 
     function resize(){
       radius=disc.offsetWidth/2;
@@ -43,7 +82,8 @@ const ComboEffects = (() => {
         const span=tau*coverage;
         // A continuous hot rim sits beneath the individual clockwise trails.
         ctx.lineCap='round';
-        for(const [stroke,thickness] of [['rgba(255,105,27,.22)',8],['#ff8e30',3.5],['#ffe6a1',1.4]]){
+        if(palette)themedRim(span,now);
+        else for(const [stroke,thickness] of [['rgba(255,105,27,.22)',8],['#ff8e30',3.5],['#ffe6a1',1.4]]){
           ctx.strokeStyle=stroke;ctx.lineWidth=thickness;
           ctx.beginPath();ctx.arc(width/2,height/2,radius,phase,phase+span);ctx.stroke();
         }
@@ -58,7 +98,7 @@ const ComboEffects = (() => {
         const x=width/2+p.x,y=height/2+p.y;
         ctx.globalAlpha=Math.min(1,(1-p.age/p.life)*1.8);
         ctx.lineWidth=p.thick;ctx.strokeStyle=p.color;
-        ctx.beginPath();ctx.moveTo(x-p.vx*p.trail,y-p.vy*p.trail);ctx.lineTo(x,y);ctx.stroke();
+        drawMote(p,x,y);
         ctx.fillStyle='#fff1a4';ctx.fillRect(x-.65,y-.65,1.3,1.3);
       }
       ctx.globalAlpha=1;
@@ -72,8 +112,9 @@ const ComboEffects = (() => {
       for(let j=0;j<contacts;j++){
         const angle=phase+(j+Math.random()*.65)*tau*coverage/contacts;
         const v=tangent(angle,radius*(1.0+coverage+Math.random()*1.35),radius*(.04+Math.random()*.22));
-        particles.push({x:radius*Math.cos(angle),y:radius*Math.sin(angle),...v,age:0,life:.20+Math.random()*.23,
-          color:hot[j%hot.length],trail:.035+Math.random()*.025,thick:1+Math.random()*1.4,drag:2,gravity:radius*.55});
+        if(theme==='meteor'){v.vx=-radius*(.6+Math.random());v.vy=radius*(.9+Math.random());}
+        particles.push({shape:theme,x:radius*Math.cos(angle),y:radius*Math.sin(angle),...v,age:0,life:.20+Math.random()*.23,
+          color:palette?palette[j%palette.length]:hot[j%hot.length],trail:theme==='meteor'?.14:.035+Math.random()*.025,thick:1+Math.random()*1.4,drag:2,gravity:radius*.55});
       }
       // Reserve space for milestone fireworks even during sustained tapping.
       if(particles.length>400)particles.splice(0,particles.length-400);
