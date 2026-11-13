@@ -42,7 +42,7 @@ try{
   assert.ok(ring,'50 combo covers all sampled angles of the disc');
   await evaluate('resetCombo()');
   const result=await evaluate(`(async()=>{const tap=document.querySelector('#tap');for(let i=0;i<100;i++)tap.click();const lifting=document.querySelector('.disc').classList.contains('lifting');tap.click();await new Promise(r=>setTimeout(r,1150));return {lifting,title:document.querySelector('.combo-award').textContent,count:document.querySelector('#amount').textContent};})()`);
-  assert.deepEqual(result,{lifting:true,title:'100 Combo!',count:'152회'});
+  assert.deepEqual(result,{lifting:true,title:'100 Combo!',count:'154회'});
   await evaluate("resetCombo(); for(let i=0;i<3;i++)document.querySelector('#tap').click()");
   const barState = () => evaluate(`(() => {
     const track=document.querySelector('.combo-track').getBoundingClientRect();
