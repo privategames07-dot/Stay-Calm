@@ -86,7 +86,7 @@ final class CalmViewController: UIViewController, WKScriptMessageHandler, PHPick
         }
         let source = "data:image/jpeg;base64," + data.base64EncodedString()
         DispatchQueue.main.async { [weak self] in
-            self?.web.callAsyncJavaScript("window.receiveTimetable(src, words)", arguments: ["src": source, "words": words], in: nil, contentWorld: .page, completionHandler: nil)
+            self?.web.callAsyncJavaScript("window.receiveTimetable(src, words)", arguments: ["src": source, "words": words], in: nil, in: .page, completionHandler: nil)
         }
     }
 }
