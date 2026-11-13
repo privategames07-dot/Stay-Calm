@@ -13,7 +13,7 @@ for size in 120 180; do
 done
 cp ios/Info.plist "$app/Info.plist"
 plutil -lint "$app/Info.plist"
-xcrun lipo -verify_arch arm64 "$app/StayCalm"
+xcrun lipo "$app/StayCalm" -verify_arch arm64
 file "$app/StayCalm"
 out="$PWD/dist/stay-calm-unsigned.ipa"
 (cd "$dest" && /usr/bin/zip -qr "$dest/stay-calm.ipa" Payload)
