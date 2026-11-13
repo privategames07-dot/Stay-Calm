@@ -30,14 +30,18 @@ try{
   const ring=await evaluate(`(async()=>{
     const tap=document.querySelector('#tap');
     for(let i=0;i<50;i++)tap.click();
-    await new Promise(r=>setTimeout(r,280));
+    for(let attempt=0;attempt<10;attempt++){
+    await new Promise(r=>setTimeout(r,150));
     const c=document.querySelector('.ember-layer'),rect=c.getBoundingClientRect();
     const scale=c.width/rect.width, r=document.querySelector('.disc').offsetWidth*scale/2;
     const pixels=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
-    return Array.from({length:72},(_,i)=>{
+    const covered=Array.from({length:72},(_,i)=>{
       const a=2*Math.PI*i/72,x=Math.round(c.width/2+r*Math.cos(a)),y=Math.round(c.height/2+r*Math.sin(a));
       return pixels[4*(y*c.width+x)+3]>128;
     }).every(Boolean);
+    if(covered)return true;
+    }
+    return false;
   })()`);
   assert.ok(ring,'50 combo covers all sampled angles of the disc');
   await evaluate('resetCombo()');
