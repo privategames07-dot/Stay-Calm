@@ -110,9 +110,19 @@ function edit(s){const c=controls(s);const save=btn('저장',()=>{try{const v=c.
   if(s.id)actions.append(btn('수업 삭제',()=>show('이 수업을 삭제할까?',sub('이미 기록한 횟수는 보관돼.'),btn('삭제',()=>{if(saveSlots(slots.filter(x=>x.id!==s.id))){close();render();}},'primary')),'secondary'));
   show(s.id?'수업 수정':'수업 추가',...c.nodes,actions);
 }
+function clearTimetable(){
+  const actions=el('div',null,'actions');
+  actions.append(btn('취소',close,'secondary'),btn('전체 초기화',()=>{
+    if(saveSlots([])){
+      chosen='';resetCombo();close();render();message('시간표를 초기화했어.');
+    }
+  },'primary'));
+  show('시간표를 초기화할까?',sub('등록한 모든 요일의 수업 '+slots.length+'개를 삭제해. 이미 남긴 참기 기록과 통계는 보관돼.'),actions);
+}
 function schedule(){
   screen.append(el('h1','시간표'));const actions=el('div',null,'actions');
   actions.append(btn('시간표 캡처 가져오기',startImport,'primary'),btn('수업 추가',()=>edit({name:'',weekday,start:540,end:600}),'secondary'));screen.append(actions);
+  if(slots.length)screen.append(btn('시간표 초기화',clearTimetable,'small-link'));
   const ds=el('div',null,'weekdays');[1,2,3,4,5,6,0].forEach(i=>ds.append(btn(Calm.days[i],()=>{weekday=i;render();},i===weekday?'sel':'')));screen.append(ds);
   const list=slots.filter(s=>s.weekday===weekday).sort((a,b)=>a.start-b.start);if(!list.length)screen.append(el('p','등록된 수업이 없어.','empty'));
   list.forEach(s=>{const row=btn('',()=>edit(s),'row');row.append(el('b',s.name),el('small',periodLabel(s)));screen.append(row);});
@@ -139,7 +149,7 @@ function statsView(){
 function settings(){
   screen.append(el('h1','설정'));const list=el('div',null,'list');
   [['haptics','탭 진동','버튼을 누를 때 가볍게 진동'],['effects','콤보 효과','붉은 배경, 브레이크 불티와 달성 불꽃놀이']].forEach(([k,title,desc])=>{const row=el('label',null,'row'),txt=el('span');txt.append(el('b',title),el('small',desc));const check=input('checkbox','');check.checked=options[k];check.onchange=()=>{const next={...options,[k]:check.checked};if(safely(()=>write('settings',next)))options=next;else check.checked=options[k];};row.append(txt,check);list.append(row);});
-  screen.append(list,sub('소리는 항상 꺼져 있어. 시간표와 기록은 이 기기에 저장돼.'),sub('stay calm! · 1.7 (8)'));
+  screen.append(list,sub('소리는 항상 꺼져 있어. 시간표와 기록은 이 기기에 저장돼.'),sub('stay calm! · 1.8 (9)'));
 }
 function startImport(){
   if(window.webkit?.messageHandlers?.timetable){window.webkit.messageHandlers.timetable.postMessage('pick');return;}

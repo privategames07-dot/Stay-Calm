@@ -68,5 +68,21 @@ try{
   assert.equal(await evaluate("document.querySelector('.combo-track').offsetWidth"),0);
   assert.equal(await evaluate("document.querySelector('#combo').textContent"),'');
   assert.equal(await evaluate("document.querySelector('#tap').click();combo"),1);
+  // Exercise reset through the timetable UI and preserve historical snapshots.
+  await evaluate(`window.resetFixture=[
+    {id:'reset-a',name:'수학',weekday:1,start:550,end:595},
+    {id:'reset-b',name:'영어',weekday:5,start:550,end:595}
+  ];saveSlots(window.resetFixture);record(window.resetFixture[0],new Date());go('시간표');
+  window.historyBeforeReset=JSON.stringify(events(Calm.key(new Date())));
+  [...document.querySelectorAll('#screen button')].find(b=>b.textContent==='시간표 초기화').click()`);
+  assert.equal(await evaluate('slots.length'),2);
+  await evaluate("[...document.querySelectorAll('#sheet-body button')].find(b=>b.textContent==='취소').click()");
+  assert.equal(await evaluate('slots.length'),2);
+  await evaluate(`[...document.querySelectorAll('#screen button')].find(b=>b.textContent==='시간표 초기화').click();
+  [...document.querySelectorAll('#sheet-body button')].find(b=>b.textContent==='전체 초기화').click()`);
+  assert.equal(await evaluate('slots.length'),0);
+  assert.deepEqual(await evaluate("read('slots',null)"),[]);
+  assert.equal(await evaluate('JSON.stringify(events(Calm.key(new Date())))===window.historyBeforeReset'),true);
+  assert.equal(await evaluate("document.querySelector('#screen').textContent.includes('등록된 수업이 없어.')"),true);
   console.log('Passed: enlarged hitbox, 100th tap ascent, fireworks title, uninterrupted input.');
 }finally{ws?.close();app.kill('SIGKILL');await wait(250);await rm(dir,{recursive:true,force:true,maxRetries:3,retryDelay:100});}
