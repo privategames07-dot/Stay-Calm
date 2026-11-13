@@ -8,6 +8,7 @@ on:
       - 'web/**'
       - 'tests/**'
       - 'scripts/build-ios.sh'
+      - 'scripts/make-source.py'
       - '.github/workflows/build-ios.yml'
 permissions:
   contents: read
@@ -29,3 +30,26 @@ jobs:
           path: dist/stay-calm-*.ipa
           if-no-files-found: error
           retention-days: 14
+  release:
+    if: github.ref == 'refs/heads/main'
+    needs: iphone
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: stay-calm-iphone
+          path: dist
+      - name: Publish versioned IPA and Feather source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/make-source.py
+          tag="build-$(jq -r '.apps[0].buildVersion' dist/source.json)"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release already exists for this build number."
+          else
+            gh release create "$tag" dist/stay-calm-*.ipa dist/source.json web/logo.jpg --target "$GITHUB_SHA" --title "stay calm! ${tag#build-}" --notes "Feather에서 IPA를 서명해 설치할 수 있습니다."
+          fi

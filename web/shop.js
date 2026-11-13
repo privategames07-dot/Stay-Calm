@@ -10,16 +10,16 @@ function subjectKey(slot){
   return slot ? 'course:'+slot.name.trim().normalize('NFC') : 'outside';
 }
 function inventory(){
-  return read('shop',{paid:{},equipped:{}});
+  return {levels:{},skillSpent:0,...read('shop',{paid:{},equipped:{}})};
 }
 function creditBalance(shop){
   let earned=0;
   const prefix=storagePrefix+'day.';
   for(let i=0;i<localStorage.length;i++){
     const key=localStorage.key(i);
-    if(key.startsWith(prefix))earned+=events(key.slice(prefix.length)).length;
+    if(key.startsWith(prefix))earned+=Calm.count(events(key.slice(prefix.length)));
   }
-  return earned-Object.values(shop.paid).reduce((sum,cost)=>sum+cost,0);
+  return earned-shop.skillSpent-Object.values(shop.paid).reduce((sum,cost)=>sum+cost,0);
 }
 function shopView(subject=subjectKey(current(new Date()).slot)){
   const shop=inventory(), balance=creditBalance(shop);
@@ -30,16 +30,37 @@ function shopView(subject=subjectKey(current(new Date()).slot)){
   function refresh(){screen.replaceChildren();shopView(chooser.value);}
   chooser.onchange=refresh;
   const heading=el('div',null,'shop-heading');
-  heading.append(el('h1','이펙트 상점'),el('b',balance.toLocaleString()+' 크레딧','wallet'));
-  screen.append(heading,sub('탭 1회당 1크레딧 · 해금한 이펙트는 과목마다 골라 쓸 수 있어.'),field('적용할 수업',chooser));
+  heading.append(el('h1','상점'),el('b',balance.toLocaleString()+' 크레딧','wallet'));
+  screen.append(heading,el('h2','성장'),sub('클릭 점수 1점마다 1크레딧을 얻어.'));
+  for(const skill of Growth.skills){
+    const level=shop.levels[skill.id]||0;
+    const price=Growth.cost(skill,level);
+    const row=el('div',null,'row'),info=el('span');
+    info.append(el('b',skill.name+' · Lv.'+level),el('small',Growth.detail(skill.id,level+1)));
+    const buy=btn(price.toLocaleString()+' 강화',()=>upgrade(skill,level),'secondary');
+    row.append(info,buy);screen.append(row);
+  }
+  screen.append(el('h2','과목 이펙트'),field('적용할 수업',chooser));
+  function upgrade(skill,level,cheat=false){
+    const latest=inventory(),price=Growth.cost(skill,level);
+    if((latest.levels[skill.id]||0)!==level){close();refresh();return;}
+    const available=creditBalance(latest);
+    if(available<price&&!cheat){offerCheat(skill.name,price-available,()=>upgrade(skill,level,true));return;}
+    latest.levels[skill.id]=level+1;
+    latest.skillSpent+=cheat?0:price;
+    if(safely(()=>write('shop',latest))){close();refresh();if(skill.id==='pet'&&level===0)startPet();}
+  }
+  function offerCheat(name,missing,accept){
+    const actions=el('div',null,'actions');
+    actions.append(btn('취소',close,'secondary'),btn('치트로 구매',accept,'primary'));
+    show('크레딧이 부족해',sub(name+' 구매에 '+missing.toLocaleString()+'크레딧이 부족해. 테스트용 치트로 구매할까?'),actions);
+  }
   function purchase(item,cheat=false){
     const latest=inventory();
     if(Object.hasOwn(latest.paid,item.id)){close();refresh();return;}
     const available=creditBalance(latest);
     if(available<item.cost&&!cheat){
-      const actions=el('div',null,'actions');
-      actions.append(btn('취소',close,'secondary'),btn('치트로 구매',()=>purchase(item,true),'primary'));
-      show('크레딧이 부족해',sub(item.name+' 구매에 '+(item.cost-available).toLocaleString()+'크레딧이 부족해. 테스트용 치트로 무료 해금할까?'),actions);
+      offerCheat(item.name,item.cost-available,()=>purchase(item,true));
       return;
     }
     latest.paid[item.id]=cheat?0:item.cost;

@@ -105,5 +105,17 @@ try{
     return {canceled,shared,separate,free,cost:funded-creditBalance(inventory()),choices:document.querySelector('#screen select').options.length};
   })()`);
   assert.deepEqual(shopChecks,{canceled:true,shared:true,separate:true,free:true,cost:500,choices:3});
+  const growth=await evaluate(`(async()=>{
+    const before=creditBalance(inventory());
+    document.querySelector('.wallet').closest('main').querySelector('.row button').click();
+    const spent=before-creditBalance(inventory());
+    go('참기');document.querySelector('#tap').click();
+    const manual=events(Calm.key(new Date())).at(-1).count;
+    go('상점');document.querySelectorAll('#screen .row button')[1].click();
+    await new Promise(r=>setTimeout(r,5200));
+    const pet=events(Calm.key(new Date())).at(-1);
+    return {spent,manual,source:pet.source,count:pet.count};
+  })()`);
+  assert.deepEqual(growth,{spent:20,manual:2,source:'pet',count:1});
   console.log('Passed: enlarged hitbox, 100th tap ascent, fireworks title, uninterrupted input.');
 }finally{ws?.close();app.kill('SIGKILL');await wait(250);await rm(dir,{recursive:true,force:true,maxRetries:3,retryDelay:100});}

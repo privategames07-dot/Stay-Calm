@@ -23,6 +23,7 @@ final class CalmViewController: UIViewController, WKScriptMessageHandler, PHPick
     override var preferredStatusBarStyle: UIStatusBarStyle { .darkContent }
     override func loadView() {
         let configuration = WKWebViewConfiguration()
+        configuration.userContentController.add(self, name: "updates")
         configuration.userContentController.add(self, name: "feedback")
         configuration.userContentController.add(self, name: "timetable")
         configuration.userContentController.add(self, name: "courseNames")
@@ -42,6 +43,10 @@ final class CalmViewController: UIViewController, WKScriptMessageHandler, PHPick
     }
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard message.frameInfo.isMainFrame, message.frameInfo.request.url?.isFileURL == true else { return }
+        if message.name == "updates", let url = URL(string: "https://github.com/privategames07-dot/Stay-Calm/releases/latest") {
+            UIApplication.shared.open(url)
+            return
+        }
         if message.name == "feedback" { tapFeedback.impactOccurred(); return }
         if message.name == "courseNames" {
             if let payload = message.body as? [String: Any], let token = payload["token"] as? String,
