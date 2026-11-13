@@ -63,8 +63,8 @@ test('거북이 선행조건, 비용, 속도·피해 상한과 독립 곱연산'
   assert.notEqual(growth.locked('turtle',{pet:19,petPower:4}),'');
   assert.equal(growth.locked('turtle',{pet:20,petPower:4}),'');
   assert.equal(growth.cost(growth.skills.find(s=>s.id==='turtle'),0),30000);
-  assert.equal(growth.turtleInterval({turtleSpeed:0}),15000);
-  assert.equal(growth.turtleInterval({turtleSpeed:10}),7500);
+  assert.equal(growth.turtleInterval({turtleSpeed:0}),30000);
+  assert.equal(growth.turtleInterval({turtleSpeed:10}),15000);
   assert.equal(growth.score({turtle:1,turtleDamage:0},'turtle'),200);
   assert.equal(growth.hit({turtle:1,turtleDamage:9,critical:10,criticalHit:19},'turtle',14,0).count,280000);
 });

@@ -37,7 +37,7 @@ const Growth=(()=>{
     const stage=combo+reduction;
     return stage>=500&&stage%500===0?stage:null;
   }
-  function turtleInterval(levels){return 15000/(1+cap(levels.turtleSpeed,10)/10);}
+  function turtleInterval(levels){return 30000/(1+cap(levels.turtleSpeed,10)/10);}
   function score(levels,source,factor=1){
     let base=1+tapLevel(levels.tap);
     if(source==='pet')base=petLevel(levels.pet)*(1+tapLevel(levels.petPower));
@@ -56,7 +56,7 @@ const Growth=(()=>{
     if(id==='critical')return '확률 '+cap(level,10)+'%';
     if(id==='criticalHit')return '크리티컬 피해 ×'+(5+5*cap(level,19)/19).toFixed(2);
     if(id==='feverEase')return '첫 피버 '+Math.max(20,100-cap(level,10)*20)+'콤보 · 다음 '+(500-cap(level,10)*20)+'콤보';
-    if(id==='turtle')return '15초마다 200회 · 토끼와 함께 활동';
+    if(id==='turtle')return '30초마다 200회 · 토끼와 함께 활동';
     if(id==='turtleSpeed')return '속도 ×'+(1+cap(level,10)/10).toFixed(1)+' · '+(turtleInterval({turtleSpeed:level})/1000).toFixed(2)+'초마다';
     if(id==='turtleDamage')return '기본 피해 '+(200*(1+cap(level,9)))+'회';
     return '500콤보부터 피버 계수 ×'+skillFactor(level).toFixed(1);
