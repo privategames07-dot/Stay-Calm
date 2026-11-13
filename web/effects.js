@@ -79,14 +79,20 @@ const ComboEffects = (() => {
       frame=0;
       const dt=Math.min(.04,Math.max(0,(now-previous)/1000));previous=now;
       ctx.clearRect(0,0,width,height);
-      inkDrops=inkDrops.filter(drop=>drop.age<.9);
+      inkDrops=inkDrops.filter(drop=>drop.age<drop.life);
       for(const drop of inkDrops){
         drop.age+=dt;
-        const size=drop.size*(1+drop.age*2);
-        const gradient=ctx.createRadialGradient(drop.x,drop.y,0,drop.x,drop.y,size);
-        gradient.addColorStop(0,'rgba(24,28,35,'+(.32*Math.max(0,1-drop.age/.9))+')');
-        gradient.addColorStop(1,'rgba(24,28,35,0)');
-        ctx.fillStyle=gradient;ctx.beginPath();ctx.arc(drop.x,drop.y,size,0,tau);ctx.fill();
+        const growth=1+Math.min(1,drop.age/.2)*.35;
+        ctx.save();ctx.translate(drop.x,drop.y);ctx.rotate(drop.angle);ctx.scale(growth, growth*drop.squash);
+        ctx.globalAlpha=.65*Math.max(0,1-drop.age/drop.life);
+        ctx.fillStyle='#20242d';ctx.beginPath();
+        drop.points.forEach((point,i)=>{
+          const x=Math.cos(point.angle)*point.radius,y=Math.sin(point.angle)*point.radius;
+          if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+        });
+        ctx.closePath();ctx.fill();
+        for(const speck of drop.specks){ctx.beginPath();ctx.ellipse(speck.x,speck.y,speck.r,speck.r*.55,speck.angle,0,tau);ctx.fill();}
+        ctx.restore();
       }
       shockwaves=shockwaves.filter(wave=>wave.age<.8);
       for(const wave of shockwaves){
@@ -178,11 +184,19 @@ const ComboEffects = (() => {
     return {
       tap(n,award=milestone(n)){
         if(theme==='ink'&&!reduce.matches&&ctx){
-          for(let i=0;i<5;i++){
-            const angle=Math.random()*tau;
-            inkDrops.push({x:width/2+radius*Math.cos(angle),y:height/2+radius*Math.sin(angle),age:0,size:8+Math.random()*14});
+          const count=Math.ceil(6+30*Math.min(1,n/50));
+          const offset=Math.random()*tau;
+          for(let i=0;i<count;i++){
+            const angle=offset+i*tau/count;
+            const size=8+Math.random()*10;
+            inkDrops.push({
+              x:width/2+radius*Math.cos(angle),y:height/2+radius*Math.sin(angle),
+              angle:angle+Math.random()*.6,age:0,life:.65+Math.random()*.45,squash:.55+Math.random()*.6,
+              points:Array.from({length:20},(_,j)=>({angle:j*tau/20,radius:size*(j%3===0?1.1+Math.random():.4+Math.random()*.6)})),
+              specks:Array.from({length:8},()=>({x:(Math.random()-.25)*size*5,y:(Math.random()-.5)*size*4,r:1+Math.random()*2.8,angle:Math.random()*tau}))
+            });
           }
-          if(inkDrops.length>90)inkDrops.splice(0,inkDrops.length-90);
+          if(inkDrops.length>220)inkDrops.splice(0,inkDrops.length-220);
           wake();
         }
         if(theme==='nova'&&award&&!reduce.matches&&ctx){

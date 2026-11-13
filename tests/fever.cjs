@@ -68,3 +68,21 @@ test('거북이 선행조건, 비용, 속도·피해 상한과 독립 곱연산'
   assert.equal(growth.score({turtle:1,turtleDamage:0},'turtle'),200);
   assert.equal(growth.hit({turtle:1,turtleDamage:9,critical:10,criticalHit:19},'turtle',14,0).count,280000);
 });
+test('모든 스킬의 표시 레벨과 현재 효과가 강화마다 구분되고 최대치에서 정확히 종료',()=>{
+  for(const skill of growth.skills){
+    const expectedOffset=['tap','petPower','criticalHit','turtleDamage'].includes(skill.id)?1:0;
+    assert.equal(growth.displayLevel(skill,0),expectedOffset,skill.id);
+    assert.equal(growth.displayLevel(skill,skill.max),skill.max+expectedOffset,skill.id);
+    for(let level=0;level<skill.max;level++){
+      assert.ok(growth.cost(skill,level)>0,skill.id);
+      assert.notEqual(growth.detail(skill.id,level),growth.detail(skill.id,level+1),skill.id+' '+level);
+    }
+    assert.equal(growth.normalizeLevels({[skill.id]:999})[skill.id],skill.max,skill.id);
+  }
+  assert.equal(growth.detail('criticalHit',18),'크리티컬 피해 ×9.74');
+  assert.equal(growth.detail('criticalHit',19),'크리티컬 피해 ×10.00');
+  assert.ok(growth.detail('turtleSpeed',9).includes('×1.9'));
+  assert.ok(growth.detail('turtleSpeed',10).includes('×2.0'));
+  assert.equal(growth.hit({critical:5,criticalHit:18},'manual',1,0).count,9.7);
+  assert.equal(growth.hit({critical:5,criticalHit:19},'manual',1,0).count,10);
+});

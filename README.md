@@ -6,7 +6,7 @@
 
 1. 저장소 **Actions → Build iPhone IPA**에서 성공한 실행을 엽니다. 새로 빌드하려면 **Run workflow**를 선택합니다.
 2. 실행 페이지 아래 **Artifacts → stay-calm-iphone**을 다운로드하고 ZIP을 풉니다.
-3. **stay-calm-22.ipa**를 아이폰에 저장하고 SideStore의 앱 추가 메뉴에서 선택해 서명·설치합니다.
+3. **stay-calm-23.ipa**를 아이폰에 저장하고 SideStore의 앱 추가 메뉴에서 선택해 서명·설치합니다.
 
 iOS 16 이상, arm64 iPhone 세로 화면을 대상으로 합니다. 빌드는 GitHub의 macOS에서 Xcode 도구로 실행합니다. CI에는 Apple 계정, 인증서, 개인 키가 필요하지 않습니다. 서명은 설치 단계에서 진행합니다. 설치 후 데이터는 기기에 저장됩니다.
 
@@ -29,9 +29,9 @@ iOS 16 이상, arm64 iPhone 세로 화면을 대상으로 합니다. 빌드는 G
 - 원래 기획은 [concept.md](docs/concept.md), 실제 구현과 안드로이드 이식 기준은 [android-handoff.md](docs/android-handoff.md)에 있습니다.
 - `web/`의 화면과 집계 코드는 두 플랫폼이 함께 사용할 수 있습니다. 아이폰은 `ios/App.swift`에서 진동과 사진 선택, 한국어 글자 인식을 연결합니다.
 - 일반 브라우저 확인은 저장소 루트에서 `python3 -m http.server 8000`을 실행한 뒤 `http://localhost:8000/web/`을 엽니다. 브라우저에서는 색상 칸을 찾아 시간을 추정하며, 이름 인식은 iOS에서 제공됩니다.
-- `node --test tests/*.cjs`로 기록·통계 규칙을 검사합니다. macOS와 iPhoneOS SDK가 있는 환경에서 `bash scripts/build-ios.sh`를 실행하면 `dist/stay-calm-22.ipa`를 만듭니다.
+- `node --test tests/*.cjs`로 기록·통계 규칙을 검사합니다. macOS와 iPhoneOS SDK가 있는 환경에서 `bash scripts/build-ios.sh`를 실행하면 `dist/stay-calm-23.ipa`를 만듭니다.
 
-IPA 파일명은 앱의 빌드 번호를 사용합니다. 이번 수정본은 22번이며 새 버전을 배포할 때 ios/Info.plist의 CFBundleVersion을 1씩 올립니다. 동일 버전의 빌드를 재실행하면 같은 번호를 사용합니다.
+IPA 파일명은 앱의 빌드 번호를 사용합니다. 이번 수정본은 23번이며 새 버전을 배포할 때 ios/Info.plist의 CFBundleVersion을 1씩 올립니다. 동일 버전의 빌드를 재실행하면 같은 번호를 사용합니다.
 
 설정의 **최신 버전 확인**에서 GitHub Releases를 엽니다. 공개 배포 시 Feather 소스 주소는 https://github.com/privategames07-dot/Stay-Calm/releases/latest/download/source.json 입니다. 같은 앱 식별자와 서명 팀으로 새 IPA를 덮어 설치합니다.
 
@@ -46,3 +46,5 @@ Android 8.0 이상에서 APK를 설치합니다. iPhone과 web 코드를 공유�
 iPad 세로·가로 지원과 태블릿 중앙 정렬을 추가했습니다.
 
 기록은 수업별로 분당 직접·펫 점수 합계를 보여줍니다. 설정의 원본 로그에서 날짜별 상세 이벤트를 열람합니다. 원본 저장 데이터를 유지해 예전 기록도 확인할 수 있습니다. 수업별 역대 최고 콤보는 같은 과목명끼리 공유하며 구버전은 5초 간격으로 추정합니다.
+
+상점 스킬 설명은 현재 효과 → 다음 강화 효과를 구분해 표시합니다. 크리티컬 피해 Lv.19는 9.74배, Lv.20은 10배입니다. 거북이 속도 Lv.9는 1.9배, Lv.10은 2배입니다. 먹물 이펙트는 불규칙한 페인트 자국과 주변 방울로 표현하며 50콤보에 원 둘레 전체로 분포합니다.

@@ -198,5 +198,33 @@ try{
     return {summarized,best,raw,retained:JSON.stringify(events(day))===window.logBefore};
   })()`);
   assert.deepEqual(logs,{summarized:true,best:true,raw:true,retained:true});
+  const skillLabels=await evaluate(`(()=>{
+    clearInterval(petTimer);
+    const shop=inventory();shop.levels={critical:5,criticalHit:18,turtle:1,turtleSpeed:9};write('shop',shop);go('상점');
+    const row=name=>[...document.querySelectorAll('#screen .row')].find(r=>r.querySelector('b')?.textContent.startsWith(name));
+    const hit=row('크리티컬 히트').textContent,speed=row('거북이 속도').textContent;
+    const before=hit.includes('Lv.19')&&hit.includes('현재 크리티컬 피해 ×9.74 → 다음 크리티컬 피해 ×10.00');
+    const speedBefore=speed.includes('현재 속도 ×1.9')&&speed.includes('다음 속도 ×2.0');
+    row('크리티컬 히트').querySelector('button').click();document.querySelector('#sheet .primary').click();
+    const after=row('크리티컬 히트').textContent;
+    return {before,speedBefore,after:after.includes('Lv.20')&&after.includes('현재 크리티컬 피해 ×10.00')&&!after.includes('다음')&&row('크리티컬 히트').querySelector('button').disabled};
+  })()`);
+  assert.deepEqual(skillLabels,{before:true,speedBefore:true,after:true});
+  const inkCoverage=await evaluate(`(async()=>{
+    const shop=inventory();shop.levels={};shop.equipped={all:'ink'};write('shop',shop);go('참기');
+    for(let i=0;i<50;i++)document.querySelector('#tap').click();
+    await new Promise(r=>setTimeout(r,150));
+    const canvas=document.querySelector('.ember-layer'),rect=canvas.getBoundingClientRect();
+    const scale=canvas.width/rect.width,r=document.querySelector('.disc').offsetWidth*scale/2;
+    const pixels=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+    return Array.from({length:72},(_,i)=>{
+      const a=2*Math.PI*i/72;
+      return [-3,0,3].some(delta=>{
+        const x=Math.round(canvas.width/2+(r+delta*scale)*Math.cos(a)),y=Math.round(canvas.height/2+(r+delta*scale)*Math.sin(a));
+        return pixels[4*(y*canvas.width+x)+3]>12;
+      });
+    }).filter(Boolean).length;
+  })()`);
+  assert.ok(inkCoverage>=68,'paint covers the circumference at 50 combo');
   console.log('Passed: enlarged hitbox, 100th tap ascent, fireworks title, uninterrupted input.');
 }finally{ws?.close();app.kill('SIGKILL');await wait(250);await rm(dir,{recursive:true,force:true,maxRetries:3,retryDelay:100});}

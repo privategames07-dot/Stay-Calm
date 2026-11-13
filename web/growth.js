@@ -2,8 +2,8 @@
 const Growth=(()=>{
   const clickPrices=[500,2000,5000,10000];
   const skills=[
-    {id:'tap',name:'다중클릭',max:4,prices:clickPrices},
-    {id:'petPower',name:'펫 클릭 배수',max:4,prices:clickPrices},
+    {id:'tap',name:'다중클릭',max:4,prices:clickPrices,displayOffset:1},
+    {id:'petPower',name:'펫 클릭 배수',max:4,prices:clickPrices,displayOffset:1},
     {id:'pet',name:'🐰 토끼 펫',base:50,max:20},
     {id:'fever',name:'피버 계수 강화',base:60,max:10},
     {id:'critical',name:'크리티컬 확률',base:500,max:10},
@@ -13,6 +13,15 @@ const Growth=(()=>{
     {id:'turtleSpeed',name:'거북이 속도',base:1000,max:10},
     {id:'turtleDamage',name:'거북이 피해',base:1500,max:9,displayOffset:1}
   ];
+  function normalizeLevels(levels){
+    const result={...levels};
+    for(const skill of skills){
+      const level=Number(levels[skill.id]??0);
+      result[skill.id]=Number.isFinite(level)?Math.min(skill.max,Math.max(0,Math.floor(level))):0;
+    }
+    return result;
+  }
+  function displayLevel(skill,level){return level+(skill.displayOffset||0);}
   function cost(skill,level){return skill.prices?skill.prices[level]??0:skill.base*(level+1)**2;}
   const tapLevel=level=>Math.min(4,Math.max(0,level||0));
   const petLevel=level=>Math.min(20,Math.max(0,level||0));
@@ -56,11 +65,11 @@ const Growth=(()=>{
     if(id==='critical')return '확률 '+cap(level,10)+'%';
     if(id==='criticalHit')return '크리티컬 피해 ×'+(5+5*cap(level,19)/19).toFixed(2);
     if(id==='feverEase')return '첫 피버 '+Math.max(20,100-cap(level,10)*20)+'콤보 · 다음 '+(500-cap(level,10)*20)+'콤보';
-    if(id==='turtle')return '30초마다 200회 · 토끼와 함께 활동';
+    if(id==='turtle')return level?'30초마다 200회 · 토끼와 함께 활동':'미해금';
     if(id==='turtleSpeed')return '속도 ×'+(1+cap(level,10)/10).toFixed(1)+' · '+(turtleInterval({turtleSpeed:level})/1000).toFixed(2)+'초마다';
     if(id==='turtleDamage')return '기본 피해 '+(200*(1+cap(level,9)))+'회';
     return '500콤보부터 피버 계수 ×'+skillFactor(level).toFixed(1);
   }
-  return {locked,feverStage,turtleInterval,hit,petLevel,tapLevel,skills,cost,score,detail,feverMs,feverFactor};
+  return {normalizeLevels,displayLevel,locked,feverStage,turtleInterval,hit,petLevel,tapLevel,skills,cost,score,detail,feverMs,feverFactor};
 })();
 if(typeof module!=='undefined')module.exports=Growth;

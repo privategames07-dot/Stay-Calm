@@ -17,9 +17,7 @@ function inventory(){
     shop.levels.fever=Math.min(10,shop.levels.fever??shop.levels.focus);
     delete shop.levels.focus;
   }
-  shop.levels.petPower=Growth.tapLevel(shop.levels.petPower);
-  shop.levels.pet=Growth.petLevel(shop.levels.pet);
-  shop.levels.tap=Growth.tapLevel(shop.levels.tap);
+  shop.levels=Growth.normalizeLevels(shop.levels);
   return shop;
 }
 function creditBalance(shop){
@@ -49,7 +47,8 @@ function shopView(subject=subjectKey(current(new Date()).slot)){
     const level=shop.levels[skill.id]||0;
     const price=Growth.cost(skill,level),locked=Growth.locked(skill.id,shop.levels);
     const row=el('div',null,'row'),info=el('span');
-    info.append(el('b',skill.name+' · Lv.'+(level+(skill.displayOffset??((skill.id==='tap'||skill.id==='petPower')?1:0)))),el('small',locked||Growth.detail(skill.id,Math.min(level+1,skill.max??Infinity))));
+    const description=locked||'현재 '+Growth.detail(skill.id,level)+(level<skill.max?' → 다음 '+Growth.detail(skill.id,level+1):'');
+    info.append(el('b',skill.name+' · Lv.'+Growth.displayLevel(skill,level)),el('small',description));
     const buy=btn(price.toLocaleString()+' 강화',()=>upgrade(skill,level),'secondary');
     if(locked){buy.disabled=true;buy.textContent='잠김';}
     if(level>=skill.max){buy.disabled=true;buy.textContent='최대 레벨';}
