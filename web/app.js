@@ -9,7 +9,7 @@ const write=(k,v)=>localStorage.setItem(storagePrefix+k,JSON.stringify(v));
 let slots,options;
 try{slots=read('slots',[]);options=Object.assign({haptics:true,effects:true},read('settings',{}));}
 catch(e){document.body.textContent='저장된 기록을 열 수 없어. 앱을 다시 열어줘.';throw e;}
-let page='참기',selectedDay=Calm.key(new Date()),week=selectedDay,weekday=new Date().getDay();
+let page='인내',selectedDay=Calm.key(new Date()),week=selectedDay,weekday=new Date().getDay();
 const comboWindowMs=5000;
 const comboPauseMs=1000;
 let feverUntil=0,feverMultiplier=1,feverEndTimer;
@@ -33,7 +33,7 @@ function makeSpeedLines(){
   return layer;
 }
 function showFever(now){
-  const boosted=now<feverUntil&&options.effects&&page==='참기'&&!document.hidden;
+  const boosted=now<feverUntil&&options.effects&&page==='인내'&&!document.hidden;
   if(boosted!==screen.classList.contains('fever-active')){
     screen.classList.toggle('fever-active',boosted);
     if(boosted)screen.prepend(makeSpeedLines());
@@ -44,7 +44,7 @@ function showFever(now){
 }
 let countdownAnimation=null, countdownRevealTimer;
 let combo=0,previous=0,comboSession='',comboTimer,noticeTimer,chosen='',homeKey='';
-const pages=['참기','기록','통계','시간표','상점'],screen=$('#screen');
+const pages=['인내','기록','통계','시간표','상점'],screen=$('#screen');
 const sheet=$('#sheet'),drawer=$('#drawer');
 function message(s){const n=$('#notice');n.textContent=s;n.style.display='block';clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>n.style.display='none',2400);}
 function safely(fn){try{fn();return true;}catch(e){message('저장하지 못했어. 저장 공간을 확인해줘.');return false;}}
@@ -65,7 +65,7 @@ function close(){if(sheet.open)sheet.close();if(drawer.open)drawer.close();}
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=close);
 for(const d of [sheet,drawer])d.addEventListener('click',e=>{if(e.target!==d)return;const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close();});
 $('#menu').onclick=()=>drawer.showModal();
-function resetCombo(){clearTimeout(countdownRevealTimer);countdownAnimation?.cancel();countdownAnimation=null;comboVisual?.endStreak();clearTimeout(comboTimer);combo=0;previous=0;comboSession='';document.documentElement.style.setProperty('--heat',0);if($('#combo'))$('#combo').textContent='';}
+function resetCombo(){feverUntil=0;feverMultiplier=1;clearTimeout(feverEndTimer);showFever(Date.now());clearTimeout(countdownRevealTimer);countdownAnimation?.cancel();countdownAnimation=null;comboVisual?.endStreak();clearTimeout(comboTimer);combo=0;previous=0;comboSession='';document.documentElement.style.setProperty('--heat',0);if($('#combo'))$('#combo').textContent='';}
 function go(p){close();resetCombo();page=p;render();}
 pages.forEach(p=>$('#tabs').append(btn(p,()=>go(p))));
 [...pages,'설정'].forEach(p=>$('#links').append(btn(p,()=>go(p))));
@@ -75,8 +75,8 @@ function render(){
   const now=new Date();$('#today').textContent=(now.getMonth()+1)+'. '+now.getDate()+'. '+Calm.days[now.getDay()];
   document.body.classList.toggle('quiet',!options.effects);
   [...$('#tabs').children].forEach((b,i)=>{b.classList.toggle('active',pages[i]===page);if(pages[i]===page)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
-  screen.className=page==='참기'?'home':'';screen.replaceChildren();screen.scrollTop=0;
-  if(page==='참기')home(now);else if(page==='시간표')schedule();else if(page==='기록')historyView();else if(page==='통계')statsView();else if(page==='상점')shopView();else settings();
+  screen.className=page==='인내'?'home':'';screen.replaceChildren();screen.scrollTop=0;
+  if(page==='인내')home(now);else if(page==='시간표')schedule();else if(page==='기록')historyView();else if(page==='통계')statsView();else if(page==='상점')shopView();else settings();
 }
 function current(d){const found=Calm.active(slots,d);const slot=found.length===1?found[0]:found.find(s=>s.id===chosen);return {found,slot};}
 function identify(d){const {found,slot}=current(d);return [Calm.key(d),found.map(s=>s.id).join(','),slot?.id].join('|');}
@@ -85,18 +85,18 @@ function home(d){
   const context=el('div',null,'hero-context');context.append(el('small',slot?'현재 수업':found.length?'겹치는 수업':'현재 시간'),el('h1',slot?.name||(found.length?'수업 선택':'수업 외')),sub(slot?periodLabel(slot):found.length?'버튼을 누르면 수업을 선택할 수 있어.':'자유 기록'));
   const bestLabel=el('small','최고 콤보 '+bestFor(allTimeBests(),slot));bestLabel.id='best-combo';context.append(bestLabel);
   if(found.length>1)context.append(btn('수업 변경',()=>pick(found,s=>{chosen=s.id;resetCombo();render();}),'small-link'));
-  const wrap=el('div',null,'target-wrap');const target=btn('',onTap,'target');target.setAttribute('aria-label','참은 횟수 1회 기록');target.id='tap';
+  const wrap=el('div',null,'target-wrap');const target=btn('',onTap,'target');target.setAttribute('aria-label','인내한 횟수 1회 기록');target.id='tap';
+  const halo=el('span',null,'critical-halo');halo.setAttribute('aria-hidden','true');wrap.append(halo);
   const comboStatus=el('div',null,'combo');
   const comboLabel=el('b');comboLabel.id='combo';
   const track=el('div',null,'combo-track');
   track.setAttribute('aria-hidden','true');track.append(el('span',null,'combo-fill'));
   comboStatus.append(comboLabel,track);
-  const disc=el('span',null,'disc'),ink=el('span',null,'ink');disc.setAttribute('aria-hidden','true');disc.append(ink);target.append(disc);wrap.append(target,comboStatus);
-  const counter=el('div',null,'counter');counter.append(el('small',slot?'이번 수업에서 참은 횟수':found.length?'수업 선택 후 기록':'오늘 수업 밖에서 참은 횟수'));const amount=el('b',Calm.count(events(Calm.key(d)).filter(e=>(e.slot?.id||'')===(slot?.id||'')))+'회');amount.id='amount';counter.append(amount);
+  const disc=el('span',null,'disc'),ink=el('span',null,'ink');disc.setAttribute('aria-hidden','true');disc.append(ink,el('span',null,'critical-glyph'));target.append(disc);wrap.append(target,comboStatus);
+  const counter=el('div',null,'counter');counter.append(el('small',slot?'이번 수업에서 인내한 횟수':found.length?'수업 선택 후 기록':'오늘 수업 밖에서 인내한 횟수'));const amount=el('b',Calm.count(events(Calm.key(d)).filter(e=>(e.slot?.id||'')===(slot?.id||'')))+'회');amount.id='amount';counter.append(amount);
   const levels=inventory().levels;
   const feverLabel=el('small');feverLabel.id='fever';counter.append(feverLabel);
   if(levels.pet||levels.tap||levels.fever)counter.append(sub([Growth.detail('tap',levels.tap||0),levels.pet?'🐰 5초당 '+Growth.score(levels,'pet')+'회':'',levels.fever?Growth.detail('fever',levels.fever):''].filter(Boolean).join(' · ')));
-  const criticalLabel=el('small');criticalLabel.id='critical';criticalLabel.setAttribute('role','status');counter.append(criticalLabel);
   if(levels.turtle)counter.append(sub('🐢 '+(Growth.turtleInterval(levels)/1000).toFixed(1)+'초당 '+Growth.score(levels,'turtle')+'회'));
   if(!slots.length)counter.append(btn('시간표 등록',()=>go('시간표'),'small-link'));
   screen.append(context,wrap,counter);showFever(Date.now());comboVisual=ComboEffects.attach(wrap,disc,equippedEffect(inventory(),subjectKey(slot)));
@@ -113,16 +113,21 @@ function saveClicks(slot,date,source,count,critical=false,comboValue){
   if(source!=='manual'&&last?.source===source&&last.critical===critical&&last.clock===e.clock&&last.slot?.id===slot?.id&&last.slot?.name===slot?.name)last.count=Math.round((last.count+count)*10)/10;
   else list.push(e);
   if(!safely(()=>write('day.'+e.day,list)))return false;
-  if(page==='참기'&&$('#amount'))$('#amount').textContent=Calm.count(list.filter(v=>v.slot?.id===slot?.id))+'회';
+  if(page==='인내'&&$('#amount'))$('#amount').textContent=Calm.count(list.filter(v=>v.slot?.id===slot?.id))+'회';
   return true;
 }
 let petTimer,criticalTimer;
-function showCritical(result,source){
-  if(!result.critical)return;
-  const label=$('#critical');
-  if(!label)return;
-  label.textContent=(source==='manual'?'':source==='pet'?'🐰 ':'🐢 ')+'CRITICAL! +'+result.count;
-  clearTimeout(criticalTimer);criticalTimer=setTimeout(()=>{if(label.isConnected)label.textContent='';},900);
+function showCritical(result){
+  if(!result.critical||!options.effects)return;
+  const wrap=$('.target-wrap'),glyph=$('.critical-glyph'),halo=$('.critical-halo');
+  if(!wrap||!glyph||!halo)return;
+  glyph.getAnimations().forEach(animation=>animation.cancel());
+  halo.getAnimations().forEach(animation=>animation.cancel());
+  wrap.classList.add('critical-on');
+  clearTimeout(criticalTimer);criticalTimer=setTimeout(()=>wrap.classList.remove('critical-on'),450);
+  glyph.animate([{opacity:1},{opacity:1,offset:.65},{opacity:0}],{duration:450,easing:'ease-out'});
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches)
+    halo.animate([{opacity:0,transform:'scale(.8)'},{opacity:.85,transform:'scale(1.05)',offset:.25},{opacity:0,transform:'scale(1.35)'}],{duration:450,easing:'ease-out'});
 }
 function startPet(){
   clearInterval(petTimer);
@@ -138,11 +143,11 @@ function startPet(){
     if(!due.length)return;
     const {found,slot}=current(now);
     if(found.length&&!slot)return;
-    if(page==='참기'&&homeKey!==identify(now)){resetCombo();render();}
+    if(page==='인내'&&homeKey!==identify(now)){resetCombo();render();}
     for(const source of due){
       const result=Growth.hit(levels,source,factorAt(time));
       if(!saveClicks(slot,now,source,result.count,result.critical))return;
-      showCritical(result,source);
+      showCritical(result);
     }
     if(page==='상점')$('.wallet').textContent=creditBalance(inventory()).toLocaleString()+' 크레딧';
     if((page==='통계'||page==='기록')&&!sheet.open){
@@ -161,7 +166,7 @@ function record(s,d){
   if(!saveClicks(s,d,'manual',result.count,result.critical,nextCombo))return;
   const bestLabel=$('#best-combo');
   if(bestLabel){const old=Number(bestLabel.textContent.replace(/\D/g,''));bestLabel.textContent='최고 콤보 '+Math.max(old,nextCombo);}
-  showCritical(result,'manual');
+  showCritical(result);
   if(award){feverMultiplier=factor;feverUntil=now+Growth.feverMs;showFever(now);clearTimeout(feverEndTimer);feverEndTimer=setTimeout(()=>showFever(Date.now()),Math.max(0,feverUntil-Date.now()));}
   combo=nextCombo;comboSession=session;previous=now;
   if(options.haptics)window.webkit?.messageHandlers?.feedback?.postMessage('tap');
@@ -215,7 +220,7 @@ function clearTimetable(){
       chosen='';resetCombo();close();render();message('시간표를 초기화했어.');
     }
   },'primary'));
-  show('시간표를 초기화할까?',sub('등록한 모든 요일의 수업 '+slots.length+'개를 삭제해. 이미 남긴 참기 기록과 통계는 보관돼.'),actions);
+  show('시간표를 초기화할까?',sub('등록한 모든 요일의 수업 '+slots.length+'개를 삭제해. 이미 남긴 인내 기록과 통계는 보관돼.'),actions);
 }
 function schedule(){
   screen.append(el('h1','시간표'));const actions=el('div',null,'actions');
@@ -258,7 +263,7 @@ function statsView(){
 function settings(){
   screen.append(el('h1','설정'));const list=el('div',null,'list');
   [['haptics','탭 진동','버튼을 누를 때 가볍게 진동'],['effects','콤보 효과','붉은 배경, 브레이크 불티와 달성 불꽃놀이']].forEach(([k,title,desc])=>{const row=el('label',null,'row'),txt=el('span');txt.append(el('b',title),el('small',desc));const check=input('checkbox','');check.checked=options[k];check.onchange=()=>{const next={...options,[k]:check.checked};if(safely(()=>write('settings',next)))options=next;else check.checked=options[k];};row.append(txt,check);list.append(row);});
-  screen.append(list,sub('소리는 항상 꺼져 있어. 시간표와 기록은 이 기기에 저장돼.'),sub('stay calm! · 3.2 (23)'),btn('원본 로그',()=>rawLogs(selectedDay),'small-link'),btn('최신 버전 확인',()=>{const bridge=window.webkit?.messageHandlers?.updates;if(bridge)bridge.postMessage('open');else window.open('https://github.com/privategames07-dot/Stay-Calm/releases/latest','_blank','noopener');},'small-link'));
+  screen.append(list,sub('소리는 항상 꺼져 있어. 시간표와 기록은 이 기기에 저장돼.'),sub('stay calm! · 3.3 (24)'),btn('원본 로그',()=>rawLogs(selectedDay),'small-link'),btn('최신 버전 확인',()=>{const bridge=window.webkit?.messageHandlers?.updates;if(bridge)bridge.postMessage('open');else window.open('https://github.com/privategames07-dot/Stay-Calm/releases/latest','_blank','noopener');},'small-link'));
 }
 function rawLogs(day){
   const raw=el('pre',JSON.stringify(events(day),null,2),'raw-log');
@@ -390,8 +395,8 @@ function review(proposal){
     if(saveSlots(next)){close();render();message('시간표에 저장했어.');}}catch(e){note.textContent=e.message;}},'primary'));
   show('가져올 수업 확인',note,list,actions);
 }
-document.addEventListener('visibilitychange',()=>{startPet();if(document.hidden){resetCombo();comboVisual?.destroy();comboVisual=null;}else if(page==='참기')render();});
-setInterval(()=>{showFever(Date.now());if(!document.hidden&&page==='참기'&&!sheet.open&&homeKey!==identify(new Date())){resetCombo();render();}},1000);
+document.addEventListener('visibilitychange',()=>{startPet();if(document.hidden){resetCombo();comboVisual?.destroy();comboVisual=null;}else if(page==='인내')render();});
+setInterval(()=>{showFever(Date.now());if(!document.hidden&&page==='인내'&&!sheet.open&&homeKey!==identify(new Date())){resetCombo();render();}},1000);
 render();
 
 startPet();

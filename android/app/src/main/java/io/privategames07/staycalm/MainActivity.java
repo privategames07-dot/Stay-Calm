@@ -207,9 +207,9 @@ public class MainActivity extends Activity {
     }
     private void failure() { js("window.importFailure('사진을 읽지 못했어. 다른 캡처를 선택해줘.')"); }
     @Override protected void onPause() { super.onPause(); js("if(typeof petTimer!=='undefined'){clearInterval(petTimer);resetCombo();}"); web.onPause(); }
-    @Override protected void onResume() { super.onResume(); if (web != null) { web.onResume(); js("if(typeof startPet==='function'){startPet();if(page==='참기')render();}"); } }
+    @Override protected void onResume() { super.onResume(); if (web != null) { web.onResume(); js("if(typeof startPet==='function'){startPet();if(page==='인내')render();}"); } }
     @Override public void onBackPressed() {
-        js("(()=>{const d=document.querySelector('dialog[open]');if(d)d.close();else go('참기');})()");
+        js("(()=>{const d=document.querySelector('dialog[open]');if(d)d.close();else go('인내');})()");
     }
     @Override protected void onDestroy() {
         super.onDestroy();

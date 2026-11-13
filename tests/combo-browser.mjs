@@ -126,7 +126,7 @@ try{
     const before=creditBalance(inventory());
     document.querySelector('.wallet').closest('main').querySelector('.row button').click();
     const spent=before-creditBalance(inventory());
-    go('참기');document.querySelector('#tap').click();
+    go('인내');document.querySelector('#tap').click();
     const manual=events(Calm.key(new Date())).at(-1).count;
     go('상점');document.querySelectorAll('#screen .row button')[2].click();
     await new Promise(r=>setTimeout(r,5200));
@@ -145,7 +145,7 @@ try{
     return {editable,scrolled:screen.scrollTop>0};
   })()`);
   assert.deepEqual(editor,{editable:true,scrolled:true});
-  await evaluate("go('참기');window.fixedHomeY=document.querySelector('#tap').getBoundingClientRect().top");
+  await evaluate("go('인내');window.fixedHomeY=document.querySelector('#tap').getBoundingClientRect().top");
   await send('Input.dispatchMouseEvent',{type:'mouseWheel',x:195,y:360,deltaX:0,deltaY:350});
   await wait(250);
   const fixedHome=await evaluate(`({
@@ -171,7 +171,7 @@ try{
   assert.deepEqual(unlocks,{gated:true,enabled:true,bought:true});
   for(const [width,height] of [[768,1024],[1024,768]]){
     await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:2,mobile:true});
-    await evaluate("go('참기')");
+    await evaluate("go('인내')");
     await wait(300);
     const layout=await evaluate(`(()=>{
       const target=document.querySelector('#tap').getBoundingClientRect(),content=screen.getBoundingClientRect(),counter=document.querySelector('.counter').getBoundingClientRect();
@@ -180,7 +180,7 @@ try{
     assert.deepEqual(layout,{centered:true,fit:true});
   }
   for(const theme of ['ink','nova']){
-    await evaluate(`(()=>{const shop=inventory();shop.equipped={all:'${theme}'};write('shop',shop);go('참기');document.querySelector('#tap').click();})()`);
+    await evaluate(`(()=>{const shop=inventory();shop.equipped={all:'${theme}'};write('shop',shop);go('인내');document.querySelector('#tap').click();})()`);
     await wait(150);
     assert.equal(await evaluate("!!document.querySelector('.ember-layer')"),true);
   }
@@ -211,7 +211,7 @@ try{
   })()`);
   assert.deepEqual(skillLabels,{before:true,speedBefore:true,after:true});
   const inkCoverage=await evaluate(`(async()=>{
-    const shop=inventory();shop.levels={};shop.equipped={all:'ink'};write('shop',shop);saveSlots([]);go('참기');
+    const shop=inventory();shop.levels={};shop.equipped={all:'ink'};write('shop',shop);saveSlots([]);go('인내');
     for(let i=0;i<50;i++)document.querySelector('#tap').click();
     await new Promise(requestAnimationFrame);
     await new Promise(requestAnimationFrame);
@@ -227,5 +227,15 @@ try{
     }).filter(Boolean).length;
   })()`);
   assert.ok(inkCoverage>=68,'paint covers the circumference at 50 combo: '+inkCoverage);
+  const criticalFX=await evaluate(`(()=>{
+    resetCombo();const before=document.querySelector('.counter').getBoundingClientRect();
+    showCritical({critical:true,count:50});
+    const after=document.querySelector('.counter').getBoundingClientRect();
+    feverMultiplier=14;feverUntil=Date.now()+10000;showFever(Date.now());
+    const active=screen.classList.contains('fever-active');
+    resetCombo();
+    return {stable:before.top===after.top&&before.height===after.height,gold:document.querySelector('.target-wrap').classList.contains('critical-on'),active,ended:factorAt(Date.now())===1&&!screen.classList.contains('fever-active')&&!document.querySelector('.speed-lines')};
+  })()`);
+  assert.deepEqual(criticalFX,{stable:true,gold:true,active:true,ended:true});
   console.log('Passed: enlarged hitbox, 100th tap ascent, fireworks title, uninterrupted input.');
 }finally{ws?.close();app.kill('SIGKILL');await wait(250);await rm(dir,{recursive:true,force:true,maxRetries:3,retryDelay:100});}

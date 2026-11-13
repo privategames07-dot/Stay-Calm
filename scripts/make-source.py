@@ -17,7 +17,7 @@ updated = dict(version=version, buildVersion=build,
                date=datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
                downloadURL=f"{release}/{ipa.name}", size=ipa.stat().st_size)
 app = dict(name=info["CFBundleDisplayName"], bundleIdentifier=info["CFBundleIdentifier"],
-           developerName=repo.split("/")[0], localizedDescription="시간표에 맞춰 참기 기록을 쌓고 펫을 키워요.",
+           developerName=repo.split("/")[0], localizedDescription="시간표에 맞춰 인내 기록을 쌓고 펫을 키워요.",
            iconURL=f"{release}/logo.jpg", versions=[updated], versionDate=updated["date"], **updated)
 source = dict(name="stay calm!", identifier=info["CFBundleIdentifier"]+".source", apps=[app])
 (root / "dist/source.json").write_text(json.dumps(source, ensure_ascii=False, indent=2))

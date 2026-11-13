@@ -43,7 +43,7 @@ public class AppSmokeTest {
             assertEquals("true",evaluate(scenario,"document.querySelector('#tap').click();events(Calm.key(new Date())).length===1"));
             assertEquals("true",evaluate(scenario,"Growth.score({pet:20,petPower:4},'pet',14)===1400"));
             assertEquals("true",evaluate(scenario,"go('상점');document.querySelector('select').options[0].textContent==='전체'"));
-            assertEquals("true",evaluate(scenario,"go('참기');getComputedStyle(screen).touchAction==='none'"));
+            assertEquals("true",evaluate(scenario,"go('인내');getComputedStyle(screen).touchAction==='none'"));
             CountDownLatch finished=new CountDownLatch(1);
             String[] recognized=new String[1];
             scenario.onActivity(activity -> new Thread(() -> {

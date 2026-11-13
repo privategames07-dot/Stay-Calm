@@ -71,7 +71,6 @@ html,body,main,dialog { touch-action:pan-x pan-y; }
 html,body { overflow:hidden; overscroll-behavior:none; }
 #screen.home { overflow:hidden; overscroll-behavior:none; touch-action:none; }
 
-#critical:not(:empty) { display:block;color:#bf2635;font-weight:800;margin-top:4px; }
 html,body { width:100%; }
 #screen { width:100%; }
 .hero-context { max-width:100%; overflow-wrap:anywhere; }
@@ -85,3 +84,19 @@ html,body { width:100%; }
 .minute-row { font-size:14px; }
 .minute-row time { color:var(--muted); font-variant-numeric:tabular-nums; }
 .raw-log { white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.5 monospace; margin-top:12px; }
+
+
+.critical-halo {
+  position:absolute; width:calc(var(--diameter) * 1.45); aspect-ratio:1;
+  border-radius:50%; pointer-events:none; opacity:0;
+  background:radial-gradient(circle,#ffdc7300 35%,#ffcc4599 52%,#ffe09200 72%);
+}
+.critical-glyph {
+  position:absolute; inset:0; opacity:0; pointer-events:none; background:#edb92f;
+  -webkit-mask:url(ink.png) center/130% no-repeat; mask:url(ink.png) center/130% no-repeat;
+}
+.lifting .critical-glyph { visibility:hidden; }
+.critical-on .ink {
+  background:#edb92f;
+  -webkit-mask:url(ink.png) center/130% no-repeat; mask:url(ink.png) center/130% no-repeat;
+}
