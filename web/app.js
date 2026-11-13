@@ -27,7 +27,9 @@ function resetCombo(){clearTimeout(comboTimer);combo=0;previous=0;comboSession='
 function go(p){close();resetCombo();page=p;render();}
 pages.forEach(p=>$('#tabs').append(btn(p,()=>go(p))));
 [...pages,'설정'].forEach(p=>$('#links').append(btn(p,()=>go(p))));
+let comboVisual=null;
 function render(){
+  comboVisual?.destroy();comboVisual=null;
   const now=new Date();$('#today').textContent=(now.getMonth()+1)+'. '+now.getDate()+'. '+Calm.days[now.getDay()];
   document.body.classList.toggle('quiet',!options.effects);
   [...$('#tabs').children].forEach((b,i)=>{b.classList.toggle('active',pages[i]===page);if(pages[i]===page)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
@@ -41,10 +43,10 @@ function home(d){
   const context=el('div',null,'hero-context');context.append(el('small',slot?'현재 수업':found.length?'겹치는 수업':'현재 시간'),el('h1',slot?.name||(found.length?'수업 선택':'수업 외')),sub(slot?periodLabel(slot):found.length?'버튼을 누르면 수업을 선택할 수 있어.':'자유 기록'));
   if(found.length>1)context.append(btn('수업 변경',()=>pick(found,s=>{chosen=s.id;resetCombo();render();}),'small-link'));
   const wrap=el('div',null,'target-wrap');const target=btn('',onTap,'target');target.setAttribute('aria-label','참은 횟수 1회 기록');target.id='tap';
-  const comboLabel=el('b',null,'combo');comboLabel.id='combo';wrap.append(target,comboLabel);
+  const comboLabel=el('b',null,'combo');comboLabel.id='combo';const disc=el('span',null,'disc'),ink=el('span',null,'ink');disc.setAttribute('aria-hidden','true');disc.append(ink);target.append(disc);wrap.append(target,comboLabel);
   const counter=el('div',null,'counter');counter.append(el('small',slot?'이번 수업에서 참은 횟수':found.length?'수업 선택 후 기록':'오늘 수업 밖에서 참은 횟수'));const amount=el('b',events(Calm.key(d)).filter(e=>(e.slot?.id||'')===(slot?.id||'')).length+'회');amount.id='amount';counter.append(amount);
   if(!slots.length)counter.append(btn('시간표 등록',()=>go('시간표'),'small-link'));
-  screen.append(context,wrap,counter);
+  screen.append(context,wrap,counter);comboVisual=ComboEffects.attach(wrap,disc);
 }
 function pick(found,callback){show('어느 수업이야?',...found.map(s=>btn(s.name+' · '+periodLabel(s),()=>{close();callback(s);},'row')));}
 function onTap(){const d=new Date(),{found,slot}=current(d);
@@ -59,7 +61,8 @@ function record(s,d){
   $('#amount').textContent=list.filter(v=>(v.slot?.id||'')===(s?.id||'')).length+'회';
   if(options.haptics)window.webkit?.messageHandlers?.feedback?.postMessage('tap');
   if(options.effects){
-    const wrap=$('.target-wrap');wrap.classList.remove('ripple');void wrap.offsetWidth;wrap.classList.add('ripple');
+    const disc=$('.disc');disc.classList.remove('ripple');void disc.offsetWidth;disc.classList.add('ripple');
+    comboVisual?.tap(combo);
     $('#combo').textContent=combo>=3?'COMBO × '+combo:'';
     if(!matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.style.setProperty('--heat',String(combo>=3?Math.min(.22,.055+combo*.009):0));
   }
@@ -114,8 +117,8 @@ function statsView(){
 }
 function settings(){
   screen.append(el('h1','설정'));const list=el('div',null,'list');
-  [['haptics','탭 진동','버튼을 누를 때 가볍게 진동'],['effects','콤보 효과','파동과 붉은 배경, 콤보 숫자']].forEach(([k,title,desc])=>{const row=el('label',null,'row'),txt=el('span');txt.append(el('b',title),el('small',desc));const check=input('checkbox','');check.checked=options[k];check.onchange=()=>{const next={...options,[k]:check.checked};if(safely(()=>write('settings',next)))options=next;else check.checked=options[k];};row.append(txt,check);list.append(row);});
-  screen.append(list,sub('소리는 항상 꺼져 있어. 시간표와 기록은 이 기기에 저장돼.'),sub('stay calm! · 1.1 (2)'));
+  [['haptics','탭 진동','버튼을 누를 때 가볍게 진동'],['effects','콤보 효과','붉은 배경, 브레이크 불티와 달성 불꽃놀이']].forEach(([k,title,desc])=>{const row=el('label',null,'row'),txt=el('span');txt.append(el('b',title),el('small',desc));const check=input('checkbox','');check.checked=options[k];check.onchange=()=>{const next={...options,[k]:check.checked};if(safely(()=>write('settings',next)))options=next;else check.checked=options[k];};row.append(txt,check);list.append(row);});
+  screen.append(list,sub('소리는 항상 꺼져 있어. 시간표와 기록은 이 기기에 저장돼.'),sub('stay calm! · 1.2 (3)'));
 }
 function startImport(){
   if(window.webkit?.messageHandlers?.timetable){window.webkit.messageHandlers.timetable.postMessage('pick');return;}
@@ -186,6 +189,6 @@ function review(proposal){
     if(saveSlots(next)){close();render();message('시간표에 저장했어.');}}catch(e){note.textContent=e.message;}},'primary'));
   show('가져올 수업 확인',note,list,actions);
 }
-document.addEventListener('visibilitychange',()=>{if(document.hidden)resetCombo();else if(page==='참기')render();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){resetCombo();comboVisual?.destroy();comboVisual=null;}else if(page==='참기')render();});
 setInterval(()=>{if(!document.hidden&&page==='참기'&&!sheet.open&&homeKey!==identify(new Date())){resetCombo();render();}},1000);
 render();

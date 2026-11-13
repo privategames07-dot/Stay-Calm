@@ -18,6 +18,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Test timetable and records
         run: node --test tests/*.cjs
+      - name: Check hitbox and milestone playback
+        run: node tests/combo-browser.mjs
       - name: Compile for iPhone and package unsigned IPA
         run: bash scripts/build-ios.sh
       - uses: actions/upload-artifact@v4
