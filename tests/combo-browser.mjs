@@ -44,9 +44,21 @@ try{
   const result=await evaluate(`(async()=>{const tap=document.querySelector('#tap');for(let i=0;i<100;i++)tap.click();const lifting=document.querySelector('.disc').classList.contains('lifting');tap.click();await new Promise(r=>setTimeout(r,760));return {lifting,title:document.querySelector('.combo-award').textContent,count:document.querySelector('#amount').textContent};})()`);
   assert.deepEqual(result,{lifting:true,title:'100 Combo!',count:'152회'});
   await evaluate("resetCombo(); for(let i=0;i<3;i++)document.querySelector('#tap').click()");
-  await wait(4300);
+  const barState = () => evaluate(`(() => {
+    const track=document.querySelector('.combo-track').getBoundingClientRect();
+    const fill=document.querySelector('.combo-fill').getBoundingClientRect();
+    const label=document.querySelector('#combo').getBoundingClientRect();
+    return {fraction:fill.width/track.width,aligned:Math.abs(fill.left-track.left)<1,below:track.top>=label.bottom};
+  })()`);
+  let bar=await barState();
+  assert.ok(bar.aligned && bar.below && bar.fraction>.9);
+  await wait(3000);
+  bar=await barState();
+  assert.ok(bar.aligned && bar.fraction>.12 && bar.fraction<.55);
   assert.equal(await evaluate("document.querySelector('#tap').click();document.querySelector('#combo').textContent"),'COMBO × 4');
+  assert.ok((await barState()).fraction>.9);
   await wait(5250);
+  assert.equal(await evaluate("document.querySelector('.combo-track').offsetWidth"),0);
   assert.equal(await evaluate("document.querySelector('#combo').textContent"),'');
   assert.equal(await evaluate("document.querySelector('#tap').click();combo"),1);
   console.log('Passed: enlarged hitbox, 100th tap ascent, fireworks title, uninterrupted input.');

@@ -11,6 +11,7 @@ try{slots=read('slots',[]);options=Object.assign({haptics:true,effects:true},rea
 catch(e){document.body.textContent='저장된 기록을 열 수 없어. 앱을 다시 열어줘.';throw e;}
 let page='참기',selectedDay=Calm.key(new Date()),week=selectedDay,weekday=new Date().getDay();
 const comboWindowMs=5000;
+let countdownAnimation=null;
 let combo=0,previous=0,comboSession='',comboTimer,noticeTimer,chosen='',homeKey='';
 const pages=['참기','기록','통계','시간표'],screen=$('#screen');
 const sheet=$('#sheet'),drawer=$('#drawer');
@@ -24,7 +25,7 @@ function close(){if(sheet.open)sheet.close();if(drawer.open)drawer.close();}
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=close);
 for(const d of [sheet,drawer])d.addEventListener('click',e=>{if(e.target!==d)return;const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close();});
 $('#menu').onclick=()=>drawer.showModal();
-function resetCombo(){comboVisual?.endStreak();clearTimeout(comboTimer);combo=0;previous=0;comboSession='';document.documentElement.style.setProperty('--heat',0);if($('#combo'))$('#combo').textContent='';}
+function resetCombo(){countdownAnimation?.cancel();countdownAnimation=null;comboVisual?.endStreak();clearTimeout(comboTimer);combo=0;previous=0;comboSession='';document.documentElement.style.setProperty('--heat',0);if($('#combo'))$('#combo').textContent='';}
 function go(p){close();resetCombo();page=p;render();}
 pages.forEach(p=>$('#tabs').append(btn(p,()=>go(p))));
 [...pages,'설정'].forEach(p=>$('#links').append(btn(p,()=>go(p))));
@@ -44,7 +45,12 @@ function home(d){
   const context=el('div',null,'hero-context');context.append(el('small',slot?'현재 수업':found.length?'겹치는 수업':'현재 시간'),el('h1',slot?.name||(found.length?'수업 선택':'수업 외')),sub(slot?periodLabel(slot):found.length?'버튼을 누르면 수업을 선택할 수 있어.':'자유 기록'));
   if(found.length>1)context.append(btn('수업 변경',()=>pick(found,s=>{chosen=s.id;resetCombo();render();}),'small-link'));
   const wrap=el('div',null,'target-wrap');const target=btn('',onTap,'target');target.setAttribute('aria-label','참은 횟수 1회 기록');target.id='tap';
-  const comboLabel=el('b',null,'combo');comboLabel.id='combo';const disc=el('span',null,'disc'),ink=el('span',null,'ink');disc.setAttribute('aria-hidden','true');disc.append(ink);target.append(disc);wrap.append(target,comboLabel);
+  const comboStatus=el('div',null,'combo');
+  const comboLabel=el('b');comboLabel.id='combo';
+  const track=el('div',null,'combo-track');
+  track.setAttribute('aria-hidden','true');track.append(el('span',null,'combo-fill'));
+  comboStatus.append(comboLabel,track);
+  const disc=el('span',null,'disc'),ink=el('span',null,'ink');disc.setAttribute('aria-hidden','true');disc.append(ink);target.append(disc);wrap.append(target,comboStatus);
   const counter=el('div',null,'counter');counter.append(el('small',slot?'이번 수업에서 참은 횟수':found.length?'수업 선택 후 기록':'오늘 수업 밖에서 참은 횟수'));const amount=el('b',events(Calm.key(d)).filter(e=>(e.slot?.id||'')===(slot?.id||'')).length+'회');amount.id='amount';counter.append(amount);
   if(!slots.length)counter.append(btn('시간표 등록',()=>go('시간표'),'small-link'));
   screen.append(context,wrap,counter);comboVisual=ComboEffects.attach(wrap,disc);
@@ -67,7 +73,16 @@ function record(s,d){
     $('#combo').textContent=combo>=3?'COMBO × '+combo:'';
     if(!matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.style.setProperty('--heat',String(combo>=3?Math.min(.22,.055+combo*.009):0));
   }
-  clearTimeout(comboTimer);comboTimer=setTimeout(resetCombo,comboWindowMs);
+  const remaining=Math.max(0,now+comboWindowMs-Date.now());
+  if(options.effects&&combo>=3){
+    countdownAnimation?.cancel();
+    countdownAnimation=$('.combo-fill').animate(
+      [{transform:'scaleX(1)'},{transform:'scaleX(0)'}],
+      {duration:comboWindowMs,easing:'linear',fill:'forwards'}
+    );
+    countdownAnimation.currentTime=comboWindowMs-remaining;
+  }
+  clearTimeout(comboTimer);comboTimer=setTimeout(resetCombo,remaining);
 }
 function field(label,control){const l=el('label',null,'field');l.append(document.createTextNode(label),control);return l;}
 function input(type,value){const n=el('input');n.type=type;n.value=value;return n;}
@@ -119,7 +134,7 @@ function statsView(){
 function settings(){
   screen.append(el('h1','설정'));const list=el('div',null,'list');
   [['haptics','탭 진동','버튼을 누를 때 가볍게 진동'],['effects','콤보 효과','붉은 배경, 브레이크 불티와 달성 불꽃놀이']].forEach(([k,title,desc])=>{const row=el('label',null,'row'),txt=el('span');txt.append(el('b',title),el('small',desc));const check=input('checkbox','');check.checked=options[k];check.onchange=()=>{const next={...options,[k]:check.checked};if(safely(()=>write('settings',next)))options=next;else check.checked=options[k];};row.append(txt,check);list.append(row);});
-  screen.append(list,sub('소리는 항상 꺼져 있어. 시간표와 기록은 이 기기에 저장돼.'),sub('stay calm! · 1.5 (6)'));
+  screen.append(list,sub('소리는 항상 꺼져 있어. 시간표와 기록은 이 기기에 저장돼.'),sub('stay calm! · 1.6 (7)'));
 }
 function startImport(){
   if(window.webkit?.messageHandlers?.timetable){window.webkit.messageHandlers.timetable.postMessage('pick');return;}
