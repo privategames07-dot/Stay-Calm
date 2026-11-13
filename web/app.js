@@ -11,7 +11,8 @@ try{slots=read('slots',[]);options=Object.assign({haptics:true,effects:true},rea
 catch(e){document.body.textContent='저장된 기록을 열 수 없어. 앱을 다시 열어줘.';throw e;}
 let page='참기',selectedDay=Calm.key(new Date()),week=selectedDay,weekday=new Date().getDay();
 const comboWindowMs=5000;
-let countdownAnimation=null;
+const comboPauseMs=250;
+let countdownAnimation=null, countdownRevealTimer;
 let combo=0,previous=0,comboSession='',comboTimer,noticeTimer,chosen='',homeKey='';
 const pages=['참기','기록','통계','시간표'],screen=$('#screen');
 const sheet=$('#sheet'),drawer=$('#drawer');
@@ -25,7 +26,7 @@ function close(){if(sheet.open)sheet.close();if(drawer.open)drawer.close();}
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=close);
 for(const d of [sheet,drawer])d.addEventListener('click',e=>{if(e.target!==d)return;const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close();});
 $('#menu').onclick=()=>drawer.showModal();
-function resetCombo(){countdownAnimation?.cancel();countdownAnimation=null;comboVisual?.endStreak();clearTimeout(comboTimer);combo=0;previous=0;comboSession='';document.documentElement.style.setProperty('--heat',0);if($('#combo'))$('#combo').textContent='';}
+function resetCombo(){clearTimeout(countdownRevealTimer);countdownAnimation?.cancel();countdownAnimation=null;comboVisual?.endStreak();clearTimeout(comboTimer);combo=0;previous=0;comboSession='';document.documentElement.style.setProperty('--heat',0);if($('#combo'))$('#combo').textContent='';}
 function go(p){close();resetCombo();page=p;render();}
 pages.forEach(p=>$('#tabs').append(btn(p,()=>go(p))));
 [...pages,'설정'].forEach(p=>$('#links').append(btn(p,()=>go(p))));
@@ -75,6 +76,10 @@ function record(s,d){
   }
   const remaining=Math.max(0,now+comboWindowMs-Date.now());
   if(options.effects&&combo>=3){
+    const track=$('.combo-track');
+    clearTimeout(countdownRevealTimer);
+    track.classList.remove('counting');
+    countdownRevealTimer=setTimeout(()=>track.classList.add('counting'),Math.max(0,remaining-comboWindowMs+comboPauseMs));
     countdownAnimation?.cancel();
     countdownAnimation=$('.combo-fill').animate(
       [{transform:'scaleX(1)'},{transform:'scaleX(0)'}],
@@ -134,7 +139,7 @@ function statsView(){
 function settings(){
   screen.append(el('h1','설정'));const list=el('div',null,'list');
   [['haptics','탭 진동','버튼을 누를 때 가볍게 진동'],['effects','콤보 효과','붉은 배경, 브레이크 불티와 달성 불꽃놀이']].forEach(([k,title,desc])=>{const row=el('label',null,'row'),txt=el('span');txt.append(el('b',title),el('small',desc));const check=input('checkbox','');check.checked=options[k];check.onchange=()=>{const next={...options,[k]:check.checked};if(safely(()=>write('settings',next)))options=next;else check.checked=options[k];};row.append(txt,check);list.append(row);});
-  screen.append(list,sub('소리는 항상 꺼져 있어. 시간표와 기록은 이 기기에 저장돼.'),sub('stay calm! · 1.6 (7)'));
+  screen.append(list,sub('소리는 항상 꺼져 있어. 시간표와 기록은 이 기기에 저장돼.'),sub('stay calm! · 1.7 (8)'));
 }
 function startImport(){
   if(window.webkit?.messageHandlers?.timetable){window.webkit.messageHandlers.timetable.postMessage('pick');return;}
