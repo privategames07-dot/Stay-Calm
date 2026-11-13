@@ -12,6 +12,12 @@ catch(e){document.body.textContent='저장된 기록을 열 수 없어. 앱을 �
 let page='참기',selectedDay=Calm.key(new Date()),week=selectedDay,weekday=new Date().getDay();
 const comboWindowMs=5000;
 const comboPauseMs=1000;
+let feverUntil=0,feverMultiplier=1;
+function factorAt(now){return now<feverUntil?feverMultiplier:1;}
+function showFever(now){
+  const label=$('#fever');
+  if(label)label.textContent=now<feverUntil?'피버 ×'+feverMultiplier.toFixed(1)+' · '+Math.ceil((feverUntil-now)/1000)+'초':'';
+}
 let countdownAnimation=null, countdownRevealTimer;
 let combo=0,previous=0,comboSession='',comboTimer,noticeTimer,chosen='',homeKey='';
 const pages=['참기','기록','통계','시간표','상점'],screen=$('#screen');
@@ -54,9 +60,10 @@ function home(d){
   const disc=el('span',null,'disc'),ink=el('span',null,'ink');disc.setAttribute('aria-hidden','true');disc.append(ink);target.append(disc);wrap.append(target,comboStatus);
   const counter=el('div',null,'counter');counter.append(el('small',slot?'이번 수업에서 참은 횟수':found.length?'수업 선택 후 기록':'오늘 수업 밖에서 참은 횟수'));const amount=el('b',Calm.count(events(Calm.key(d)).filter(e=>(e.slot?.id||'')===(slot?.id||'')))+'회');amount.id='amount';counter.append(amount);
   const levels=inventory().levels;
-  if(levels.pet||levels.tap||levels.focus)counter.append(sub([Growth.detail('tap',levels.tap||0),levels.pet?'🐹 5초당 '+levels.pet+'회':'',levels.focus?'10콤보 +'+5*levels.focus:''].filter(Boolean).join(' · ')));
+  const feverLabel=el('small');feverLabel.id='fever';counter.append(feverLabel);
+  if(levels.pet||levels.tap||levels.fever)counter.append(sub([Growth.detail('tap',levels.tap||0),levels.pet?'🐹 5초당 '+levels.pet+'회':'',levels.fever?Growth.detail('fever',levels.fever):''].filter(Boolean).join(' · ')));
   if(!slots.length)counter.append(btn('시간표 등록',()=>go('시간표'),'small-link'));
-  screen.append(context,wrap,counter);comboVisual=ComboEffects.attach(wrap,disc,inventory().equipped[subjectKey(slot)]||'brake');
+  screen.append(context,wrap,counter);showFever(Date.now());comboVisual=ComboEffects.attach(wrap,disc,inventory().equipped[subjectKey(slot)]||'brake');
 }
 function pick(found,callback){show('어느 수업이야?',...found.map(s=>btn(s.name+' · '+periodLabel(s),()=>{close();callback(s);},'row')));}
 function onTap(){const d=new Date(),{found,slot}=current(d);
@@ -67,7 +74,7 @@ function saveClicks(slot,date,source,count){
   const e=Calm.tap(slot,date),list=events(e.day);
   e.source=source;e.count=count;
   const last=list.at(-1);
-  if(source==='pet'&&last?.source==='pet'&&last.clock===e.clock&&last.slot?.id===slot?.id&&last.slot?.name===slot?.name)last.count+=count;
+  if(source==='pet'&&last?.source==='pet'&&last.clock===e.clock&&last.slot?.id===slot?.id&&last.slot?.name===slot?.name)last.count=Math.round((last.count+count)*10)/10;
   else list.push(e);
   if(!safely(()=>write('day.'+e.day,list)))return false;
   if(page==='참기'&&$('#amount'))$('#amount').textContent=Calm.count(list.filter(v=>v.slot?.id===slot?.id))+'회';
@@ -82,7 +89,7 @@ function startPet(){
     const now=new Date(),{found,slot}=current(now);
     if(found.length&&!slot)return;
     if(page==='참기'&&homeKey!==identify(now)){resetCombo();render();}
-    if(!saveClicks(slot,now,'pet',Growth.score(inventory().levels,'pet',0)))return;
+    if(!saveClicks(slot,now,'pet',Growth.score(inventory().levels,'pet',factorAt(now.getTime()))))return;
     if(page==='상점')$('.wallet').textContent=creditBalance(inventory()).toLocaleString()+' 크레딧';
     if((page==='통계'||page==='기록')&&!sheet.open){
       const scroll=screen.scrollTop;
@@ -94,11 +101,15 @@ function startPet(){
 function record(s,d){
   const session=Calm.key(d)+'|'+(s?.id||''),now=d.getTime();
   const nextCombo=session===comboSession&&now>=previous&&now-previous<comboWindowMs?combo+1:1;
-  if(!saveClicks(s,d,'manual',Growth.score(inventory().levels,'manual',nextCombo)))return;
+  const levels=inventory().levels,award=ComboEffects.milestone(nextCombo);
+  const factor=award?Growth.feverFactor(levels.fever,nextCombo):factorAt(now);
+  if(!saveClicks(s,d,'manual',Growth.score(levels,'manual',factor)))return;
+  if(award){feverMultiplier=factor;feverUntil=now+Growth.feverMs;showFever(now);}
   combo=nextCombo;comboSession=session;previous=now;
   if(options.haptics)window.webkit?.messageHandlers?.feedback?.postMessage('tap');
   if(options.effects){
-    const disc=$('.disc');disc.classList.remove('ripple');void disc.offsetWidth;disc.classList.add('ripple');
+    const disc=$('.disc');
+    if(!award&&!disc.classList.contains('lifting')){disc.classList.remove('ripple');void disc.offsetWidth;disc.classList.add('ripple');}
     comboVisual?.tap(combo);
     $('#combo').textContent=combo>=3?'COMBO × '+combo:'';
     if(!matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.style.setProperty('--heat',String(combo>=3?Math.min(.22,.055+combo*.009):0));
@@ -178,7 +189,7 @@ function statsView(){
 function settings(){
   screen.append(el('h1','설정'));const list=el('div',null,'list');
   [['haptics','탭 진동','버튼을 누를 때 가볍게 진동'],['effects','콤보 효과','붉은 배경, 브레이크 불티와 달성 불꽃놀이']].forEach(([k,title,desc])=>{const row=el('label',null,'row'),txt=el('span');txt.append(el('b',title),el('small',desc));const check=input('checkbox','');check.checked=options[k];check.onchange=()=>{const next={...options,[k]:check.checked};if(safely(()=>write('settings',next)))options=next;else check.checked=options[k];};row.append(txt,check);list.append(row);});
-  screen.append(list,sub('소리는 항상 꺼져 있어. 시간표와 기록은 이 기기에 저장돼.'),sub('stay calm! · 2.0 (11)'),btn('최신 버전 확인',()=>{const bridge=window.webkit?.messageHandlers?.updates;if(bridge)bridge.postMessage('open');else window.open('https://github.com/privategames07-dot/Stay-Calm/releases/latest','_blank','noopener');},'small-link'));
+  screen.append(list,sub('소리는 항상 꺼져 있어. 시간표와 기록은 이 기기에 저장돼.'),sub('stay calm! · 2.1 (12)'),btn('최신 버전 확인',()=>{const bridge=window.webkit?.messageHandlers?.updates;if(bridge)bridge.postMessage('open');else window.open('https://github.com/privategames07-dot/Stay-Calm/releases/latest','_blank','noopener');},'small-link'));
 }
 function startImport(){
   if(window.webkit?.messageHandlers?.timetable){window.webkit.messageHandlers.timetable.postMessage('pick');return;}
@@ -307,7 +318,7 @@ function review(proposal){
   show('가져올 수업 확인',note,list,actions);
 }
 document.addEventListener('visibilitychange',()=>{startPet();if(document.hidden){resetCombo();comboVisual?.destroy();comboVisual=null;}else if(page==='참기')render();});
-setInterval(()=>{if(!document.hidden&&page==='참기'&&!sheet.open&&homeKey!==identify(new Date())){resetCombo();render();}},1000);
+setInterval(()=>{showFever(Date.now());if(!document.hidden&&page==='참기'&&!sheet.open&&homeKey!==identify(new Date())){resetCombo();render();}},1000);
 render();
 
 startPet();

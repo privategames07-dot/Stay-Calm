@@ -26,17 +26,17 @@ const Calm = (() => {
     return {id:uuid(),at:date.getTime(),day:key(date),hour:date.getHours(),clock:time(date.getHours()*60+date.getMinutes()),
       slot:slot ? {id:slot.id,name:slot.name,start:slot.start,end:slot.end} : null};
   }
-  const count=events=>events.reduce((sum,e)=>sum+(e.count??1),0);
+  const count=events=>events.reduce((sum,e)=>sum+Math.round((e.count??1)*10),0)/10;
   function rank(events,key) {
     const counts=new Map();
-    events.forEach(e=>{const k=key(e);counts.set(k,(counts.get(k)||0)+(e.count??1));});
+    events.forEach(e=>{const k=key(e);counts.set(k,Math.round(((counts.get(k)||0)+(e.count??1))*10)/10);});
     return [...counts].sort((a,b)=>b[1]-a[1] || String(a[0]).localeCompare(String(b[0]),'ko',{numeric:true}));
   }
   function stats(events,day) {
     const first=monday(day), last=shift(first,6);
     const week=events.filter(e=>e.day>=first && e.day<=last);
     const classes=week.filter(e=>e.slot);
-    return {first,last,total:count(classes),outside:count(week)-count(classes),subjects:rank(classes,e=>e.slot.name),hours:rank(classes,e=>e.hour)};
+    return {first,last,total:count(classes),outside:count(week.filter(e=>!e.slot)),subjects:rank(classes,e=>e.slot.name),hours:rank(classes,e=>e.hour)};
   }
   return {count,uuid,key,shift,monday,time,minutes,days,active,tap,stats};
 })();

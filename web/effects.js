@@ -17,7 +17,7 @@ const ComboEffects = (() => {
     const reduce=matchMedia('(prefers-reduced-motion: reduce)');
     let particles=[],frame=0,previous=0,phase=-Math.PI/2;
     let coverage=0,contacts=0,nextEmission=0;
-    let width=0,height=0,radius=0,burstTimer,restoreTimer,flight=null,lettering=null;
+    let width=0,height=0,radius=0,restoreTimer,flight=null,lettering=null;
     const ink=disc.querySelector('.ink');
     const hot=['#ffbd46','#ff8735','#f85625','#ffcc5b'];
     const festival=['#ffb632','#f96829','#ff497c','#d42e50','#ffdb66'];
@@ -133,7 +133,7 @@ const ComboEffects = (() => {
       wake();
     }
     function clearAward(){
-      clearTimeout(burstTimer);clearTimeout(restoreTimer);flight?.cancel();lettering?.cancel();
+      clearTimeout(restoreTimer);flight?.cancel();lettering?.cancel();
       flight=null;lettering=null;disc.classList.remove('lifting');banner.textContent='';
     }
     function celebrate(n,still){
@@ -152,12 +152,10 @@ const ComboEffects = (() => {
       disc.classList.add('lifting');
       const rise=Math.round(radius*.96);
       flight=ink.animate([
-        {transform:'perspective(500px) translateY(0) rotateY(0deg) scale(1)',opacity:1},
-        {transform:'perspective(500px) translateY(4px) rotateY(-22deg) scale(.94)',opacity:1,offset:.13},
-        {transform:'perspective(500px) translateY(-'+rise+'px) rotateY(710deg) scale(.68)',opacity:1,offset:.84},
-        {transform:'perspective(500px) translateY(-'+(rise+7)+'px) rotateY(720deg) scale(.49)',opacity:0}
-      ],{duration:680,easing:'ease-in-out',fill:'forwards'});
-      burstTimer=setTimeout(reveal,650);
+        {transform:'perspective(600px) translate3d(0,0,0) rotateY(0deg) scale(1)',opacity:1},
+        {transform:'perspective(600px) translate3d(0,-'+rise+'px,0) rotateY(360deg) scale(.49)',opacity:0.12}
+      ],{duration:980,easing:'cubic-bezier(.28,.12,.28,1)',fill:'forwards'});
+      flight.onfinish=reveal;
     }
     return {
       tap(n){

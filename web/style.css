@@ -5,7 +5,7 @@ main{position:relative;flex:1;min-height:0;overflow:auto;padding:24px;overscroll
 .disc{position:relative;width:var(--diameter);aspect-ratio:1;border-radius:50%;background:white url(logo.jpg) 50% 50% / 130% no-repeat;box-shadow:0 3px 10px #00000013;pointer-events:none}
 .target:active .disc:not(.lifting){transform:scale(.976)}
 .disc.lifting{background-image:linear-gradient(white,white),url(logo.jpg);background-position:center;background-size:60% 58%,130%;background-repeat:no-repeat}
-.ink{display:none;position:absolute;inset:0;transform-origin:center;background:url(logo.jpg) center/130% no-repeat;filter:url(#red-ink);pointer-events:none}
+.ink{display:none;position:absolute;inset:0;transform-origin:center;background:url(ink.png) center/130% no-repeat;will-change:transform,opacity;pointer-events:none}
 .lifting .ink{display:block}
 .ember-layer,.combo-award{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none}
 .ember-layer{z-index:1}
@@ -43,3 +43,5 @@ dialog{color:var(--ink);border:0;border-radius:22px;padding:20px;width:min(94%,4
 .shop-heading { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
 .wallet { color:var(--red); font-variant-numeric:tabular-nums; }
 .shop-item button { white-space:nowrap; }
+
+#fever:not(:empty){display:block;color:var(--red);font-weight:700;margin-top:4px}

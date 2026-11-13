@@ -10,7 +10,12 @@ function subjectKey(slot){
   return slot ? 'course:'+slot.name.trim().normalize('NFC') : 'outside';
 }
 function inventory(){
-  return {levels:{},skillSpent:0,...read('shop',{paid:{},equipped:{}})};
+  const shop={levels:{},skillSpent:0,...read('shop',{paid:{},equipped:{}})};
+  if(Object.hasOwn(shop.levels,'focus')){
+    shop.levels.fever=Math.min(10,shop.levels.fever??shop.levels.focus);
+    delete shop.levels.focus;
+  }
+  return shop;
 }
 function creditBalance(shop){
   let earned=0;
@@ -19,7 +24,7 @@ function creditBalance(shop){
     const key=localStorage.key(i);
     if(key.startsWith(prefix))earned+=Calm.count(events(key.slice(prefix.length)));
   }
-  return earned-shop.skillSpent-Object.values(shop.paid).reduce((sum,cost)=>sum+cost,0);
+  return Math.round(earned*10)/10-shop.skillSpent-Object.values(shop.paid).reduce((sum,cost)=>sum+cost,0);
 }
 function shopView(subject=subjectKey(current(new Date()).slot)){
   const shop=inventory(), balance=creditBalance(shop);
@@ -36,14 +41,15 @@ function shopView(subject=subjectKey(current(new Date()).slot)){
     const level=shop.levels[skill.id]||0;
     const price=Growth.cost(skill,level);
     const row=el('div',null,'row'),info=el('span');
-    info.append(el('b',skill.name+' · Lv.'+level),el('small',Growth.detail(skill.id,level+1)));
+    info.append(el('b',skill.name+' · Lv.'+level),el('small',Growth.detail(skill.id,Math.min(level+1,skill.max??Infinity))));
     const buy=btn(price.toLocaleString()+' 강화',()=>upgrade(skill,level),'secondary');
+    if(level>=skill.max){buy.disabled=true;buy.textContent='최대 레벨';}
     row.append(info,buy);screen.append(row);
   }
   screen.append(el('h2','과목 이펙트'),field('적용할 수업',chooser));
   function upgrade(skill,level,cheat=false){
     const latest=inventory(),price=Growth.cost(skill,level);
-    if((latest.levels[skill.id]||0)!==level){close();refresh();return;}
+    if(level>=skill.max||(latest.levels[skill.id]||0)!==level){close();refresh();return;}
     const available=creditBalance(latest);
     if(available<price&&!cheat){offerCheat(skill.name,price-available,()=>upgrade(skill,level,true));return;}
     latest.levels[skill.id]=level+1;
