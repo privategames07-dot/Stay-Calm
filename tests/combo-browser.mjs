@@ -113,7 +113,7 @@ try{
     const shared=inventory().equipped[subjectKey({...a,weekday:3})]==='bolt';
     choose(subjectKey(b));const separate=buttons()[0].disabled;
     const free=creditBalance(inventory())===before;
-    write('day.2020-01-01',Array(500).fill({}));
+    write('day.2020-01-01',Array(1000).fill({}));
     const funded=creditBalance(inventory());buttons()[1].click();
     choose('all');buttons()[2].click();
     const allApplied=[subjectKey(a),subjectKey(b),'outside','course:새 과목'].every(k=>equippedEffect(inventory(),k)==='bolt');
@@ -133,7 +133,7 @@ try{
     const pet=events(Calm.key(new Date())).at(-1);
     return {spent,manual,source:pet.source,count:pet.count};
   })()`);
-  assert.deepEqual(growth,{spent:20,manual:2,source:'pet',count:1});
+  assert.deepEqual(growth,{spent:500,manual:2,source:'pet',count:1});
   const editor=await evaluate(`(()=>{
     go('시간표');
     [...document.querySelectorAll('#screen button')].find(b=>b.textContent==='수업 추가').click();

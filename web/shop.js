@@ -15,6 +15,7 @@ function inventory(){
     shop.levels.fever=Math.min(10,shop.levels.fever??shop.levels.focus);
     delete shop.levels.focus;
   }
+  shop.levels.tap=Growth.tapLevel(shop.levels.tap);
   return shop;
 }
 function creditBalance(shop){
@@ -44,7 +45,7 @@ function shopView(subject=subjectKey(current(new Date()).slot)){
     const level=shop.levels[skill.id]||0;
     const price=Growth.cost(skill,level);
     const row=el('div',null,'row'),info=el('span');
-    info.append(el('b',skill.name+' · Lv.'+level),el('small',Growth.detail(skill.id,Math.min(level+1,skill.max??Infinity))));
+    info.append(el('b',skill.name+' · Lv.'+(skill.id==='tap'?level+1:level)),el('small',Growth.detail(skill.id,Math.min(level+1,skill.max??Infinity))));
     const buy=btn(price.toLocaleString()+' 강화',()=>upgrade(skill,level),'secondary');
     if(level>=skill.max){buy.disabled=true;buy.textContent='최대 레벨';}
     row.append(info,buy);screen.append(row);
