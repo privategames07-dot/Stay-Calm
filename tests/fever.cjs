@@ -26,3 +26,13 @@ test('다중클릭은 기본 Lv1부터 Lv5까지만 강화하고 구버전 과�
   assert.equal(growth.score({tap:20},'manual'),5);
   assert.equal(growth.score({tap:20},'manual',2),10);
 });
+
+test('펫은 Lv0부터 Lv20까지 레벨과 같은 자동 클릭 횟수, 마지막 강화 20000',()=>{
+  const pet=growth.skills.find(s=>s.id==='pet');
+  assert.equal(pet.max,20);
+  assert.deepEqual([0,4,9,19].map(l=>growth.cost(pet,l)),[50,1250,5000,20000]);
+  for(const level of [0,1,5,20,99]){
+    assert.equal(growth.score({pet:level},'pet'),Math.min(20,level));
+  }
+  assert.equal(growth.score({pet:20},'pet',2),40);
+});

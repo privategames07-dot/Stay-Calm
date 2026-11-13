@@ -15,6 +15,7 @@ function inventory(){
     shop.levels.fever=Math.min(10,shop.levels.fever??shop.levels.focus);
     delete shop.levels.focus;
   }
+  shop.levels.pet=Growth.petLevel(shop.levels.pet);
   shop.levels.tap=Growth.tapLevel(shop.levels.tap);
   return shop;
 }
