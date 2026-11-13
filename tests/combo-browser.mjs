@@ -141,5 +141,14 @@ try{
     return {editable,scrolled:screen.scrollTop>0};
   })()`);
   assert.deepEqual(editor,{editable:true,scrolled:true});
+  await evaluate("go('참기');window.fixedHomeY=document.querySelector('#tap').getBoundingClientRect().top");
+  await send('Input.dispatchMouseEvent',{type:'mouseWheel',x:195,y:360,deltaX:0,deltaY:350});
+  await wait(250);
+  const fixedHome=await evaluate(`({
+    fixed:Math.abs(document.querySelector('#tap').getBoundingClientRect().top-window.fixedHomeY)<1,
+    top:screen.scrollTop,
+    touch:getComputedStyle(screen).touchAction
+  })`);
+  assert.deepEqual(fixedHome,{fixed:true,top:0,touch:'none'});
   console.log('Passed: enlarged hitbox, 100th tap ascent, fireworks title, uninterrupted input.');
 }finally{ws?.close();app.kill('SIGKILL');await wait(250);await rm(dir,{recursive:true,force:true,maxRetries:3,retryDelay:100});}

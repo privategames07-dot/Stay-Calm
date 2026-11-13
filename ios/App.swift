@@ -30,6 +30,7 @@ final class CalmViewController: UIViewController, WKScriptMessageHandler, PHPick
         configuration.userContentController.add(self, name: "courseNames")
         web = WKWebView(frame: .zero, configuration: configuration)
         web.navigationDelegate = self
+        web.scrollView.bounces = false
         web.scrollView.pinchGestureRecognizer?.isEnabled = false
         web.scrollView.contentInsetAdjustmentBehavior = .never
         web.backgroundColor = .white
