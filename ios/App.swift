@@ -19,11 +19,13 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
 final class CalmViewController: UIViewController, WKScriptMessageHandler, PHPickerViewControllerDelegate, WKNavigationDelegate {
     private var web: WKWebView!
     private var importImage: CGImage?
+    private var updateURL = URL(string: "https://github.com/privategames07-dot/Stay-Calm/releases/latest")!
     private let tapFeedback = UIImpactFeedbackGenerator(style: .light)
     override var preferredStatusBarStyle: UIStatusBarStyle { .darkContent }
     override func loadView() {
         let configuration = WKWebViewConfiguration()
         configuration.ignoresViewportScaleLimits = false
+        configuration.userContentController.add(self, name: "updateCheck")
         configuration.userContentController.add(self, name: "cache")
         configuration.userContentController.add(self, name: "updates")
         configuration.userContentController.add(self, name: "feedback")
@@ -55,8 +57,13 @@ final class CalmViewController: UIViewController, WKScriptMessageHandler, PHPick
             }
             return
         }
-        if message.name == "updates", let url = URL(string: "https://github.com/privategames07-dot/Stay-Calm/releases/latest") {
-            UIApplication.shared.open(url)
+        if message.name == "updateCheck" {
+            let body = message.body as? [String: Any]
+            checkUpdate(manual: body?["manual"] as? Bool ?? false)
+            return
+        }
+        if message.name == "updates" {
+            UIApplication.shared.open(updateURL)
             return
         }
         if message.name == "feedback" { tapFeedback.impactOccurred(); return }
@@ -84,6 +91,30 @@ final class CalmViewController: UIViewController, WKScriptMessageHandler, PHPick
             guard let image = item as? UIImage else { self?.reportFailure(); return }
             self?.recognize(image)
         }
+    }
+    private func checkUpdate(manual: Bool) {
+        let url = URL(string: "https://github.com/privategames07-dot/Stay-Calm/releases/latest/download/source.json")!
+        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 7)
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            var result: [String: Any] = ["manual": manual, "error": true]
+            var download: URL?
+            if error == nil, let data = data, data.count <= 262144,
+               let http = response as? HTTPURLResponse, http.statusCode == 200,
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let apps = json["apps"] as? [[String: Any]], let app = apps.first,
+               let value = app["buildVersion"] as? String, let build = Int(value), build > 0 {
+                result = ["manual": manual, "build": build, "version": "0.\(build)"]
+                download = URL(string: "https://github.com/privategames07-dot/Stay-Calm/releases/download/build-\(build)/stay-calm-\(build).ipa")
+            }
+            guard let encoded = try? JSONSerialization.data(withJSONObject: result),
+                  let payload = String(data: encoded, encoding: .utf8) else { return }
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                if let download = download { self.updateURL = download }
+                self.web.evaluateJavaScript("window.receiveUpdate(\(payload))")
+            }
+        }.resume()
     }
     private func reportFailure() {
         DispatchQueue.main.async { [weak self] in

@@ -38,6 +38,7 @@ public class MainActivity extends Activity {
     private WebView web;
     private Bitmap importImage;
     private boolean pickerOpen;
+    private String updateURL = "https://github.com/privategames07-dot/Stay-Calm/releases/latest";
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final TextRecognizer recognizer = TextRecognition.getClient(new KoreanTextRecognizerOptions.Builder().build());
 
@@ -92,8 +93,12 @@ public class MainActivity extends Activity {
                                     js("window.cacheCleared()");
                                 });
                                 break;
+                            case "updateCheck":
+                                boolean manual = payload.getJSONObject("body").optBoolean("manual", false);
+                                new Thread(() -> checkUpdate(manual)).start();
+                                break;
                             case "updates":
-                                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/privategames07-dot/Stay-Calm/releases/latest")));
+                                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(updateURL)));
                                 break;
                             case "timetable":
                                 if (!pickerOpen) {
@@ -135,6 +140,42 @@ public class MainActivity extends Activity {
                 js("window.receiveTimetable(" + JSONObject.quote(src) + "," + words + ")");
             } catch (Exception error) { failure(); }
         });
+    }
+
+    private void checkUpdate(boolean manual) {
+        java.net.HttpURLConnection connection = null;
+        JSONObject result = new JSONObject();
+        try {
+            result.put("manual", manual);
+            connection = (java.net.HttpURLConnection) new java.net.URL(
+                "https://github.com/privategames07-dot/Stay-Calm/releases/latest/download/source.json").openConnection();
+            connection.setConnectTimeout(7000); connection.setReadTimeout(7000);
+            connection.setUseCaches(false);
+            try (InputStream input = connection.getInputStream()) {
+                ByteArrayOutputStream output = new ByteArrayOutputStream();
+                byte[] buffer = new byte[4096]; int length;
+                while ((length = input.read(buffer)) != -1) {
+                    if (output.size() + length > 262144) throw new IllegalArgumentException("Version response size");
+                    output.write(buffer, 0, length);
+                }
+                JSONObject app = new JSONObject(output.toString("UTF-8")).getJSONArray("apps").getJSONObject(0);
+                int build = Integer.parseInt(app.getString("buildVersion"));
+                if (build <= 0) throw new IllegalArgumentException("Build number");
+                result.put("build", build).put("version", "0." + build);
+                String download = "https://github.com/privategames07-dot/Stay-Calm/releases/download/build-" + build + "/stay-calm-" + build + ".apk";
+                if (build > getPackageManager().getPackageInfo(getPackageName(), 0).versionCode) {
+                    java.net.HttpURLConnection check = (java.net.HttpURLConnection)new java.net.URL(download).openConnection();
+                    try {
+                        check.setRequestMethod("HEAD"); check.setConnectTimeout(7000); check.setReadTimeout(7000);
+                        if (check.getResponseCode() != 200) throw new IllegalStateException("APK not published yet");
+                    } finally { check.disconnect(); }
+                }
+                runOnUiThread(() -> updateURL = download);
+            }
+        } catch (Exception error) {
+            try { result.put("error", true); } catch (Exception ignored) { }
+        } finally { if (connection != null) connection.disconnect(); }
+        js("window.receiveUpdate(" + result + ")");
     }
 
     private Bitmap loadImage(Uri uri) throws Exception {

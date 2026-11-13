@@ -259,5 +259,19 @@ try{
     return {canceled,refunded,reset,kept,deleted,conserved,continued,cacheSafe};
   })()`);
   assert.deepEqual(maintenance,{canceled:true,refunded:true,reset:true,kept:true,deleted:true,conserved:true,continued:true,cacheSafe:true});
+  const updates=await evaluate(`(async()=>{
+    close();window.receiveUpdate({build:CalmVersion.build+1,version:'0.'+(CalmVersion.build+1)});
+    const newer=sheet.open&&document.querySelector('#sheet-title').textContent==='업데이트가 있어';
+    close();window.receiveUpdate({build:CalmVersion.build,version:CalmVersion.name,manual:true});
+    const current=!sheet.open&&document.querySelector('#notice').textContent.includes('최신 버전');
+    show('입력 중',sub('사용자 입력'));
+    window.receiveUpdate({build:CalmVersion.build+2,version:'0.'+(CalmVersion.build+2)});
+    const preserved=document.querySelector('#sheet-title').textContent==='입력 중';
+    close();await new Promise(r=>setTimeout(r,50));
+    const deferred=sheet.open&&document.querySelector('#sheet-title').textContent==='업데이트가 있어';
+    close();window.receiveUpdate({error:true,manual:false});
+    return {newer,current,preserved,deferred,offline:!sheet.open};
+  })()`);
+  assert.deepEqual(updates,{newer:true,current:true,preserved:true,deferred:true,offline:true});
   console.log('Passed: enlarged hitbox, 100th tap ascent, fireworks title, uninterrupted input.');
 }finally{ws?.close();app.kill('SIGKILL');await wait(250);await rm(dir,{recursive:true,force:true,maxRetries:3,retryDelay:100});}

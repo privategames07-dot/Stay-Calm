@@ -7,6 +7,8 @@ on:
       - 'android/**'
       - 'web/**'
       - 'ios/Info.plist'
+      - 'scripts/sync-version.py'
+      - 'scripts/normalize-release-versions.py'
       - '.github/workflows/build-android.yml'
 permissions:
   contents: read
@@ -26,6 +28,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
+      - name: Derive pre-release version
+        run: python3 scripts/sync-version.py
       - name: Check shared game rules
         run: node --test tests/*.cjs
       - name: Build signed APK and instrumentation tests
@@ -67,5 +71,9 @@ jobs:
           done
           gh release view "build-$build"
           gh release upload "build-$build" dist/*.apk --clobber
+      - name: Normalize previous public release versions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/normalize-release-versions.py
     permissions:
       contents: write

@@ -1,4 +1,4 @@
-# stay calm! · 안드로이드 이식 명세 3.4 · 빌드 25
+# stay calm! · 안드로이드 이식 명세 0.26 · 빌드 26
 
 ## 재사용할 파일
 
@@ -173,3 +173,10 @@ ink는 터치마다 반투명 먹물 반점이 확산하고 소멸한다. nova�
 ## 빌드 25 · 유지관리
 
 스킬 초기화는 levels와 skillSpent를 비워 실제 강화 지출만 환급한다. 펫 타이머와 피버를 재설정하고 이펙트 구매는 유지한다. 로그 삭제는 logState에 새 epoch와 기존 누적 획득 코인 creditCarry를 한 번에 기록한 뒤 이전 day.*와 logs.* 키를 정리한다. 이후 기록은 logs.<epoch>.day.<날짜>에 저장한다. 포인터 교체가 먼저 이뤄져 정리 중 중단되어도 잔액과 새 기록이 일관된다. 최고 콤보는 현재 epoch 이벤트만 읽는다. 캐시 삭제는 WebView 메모리·디스크 캐시와 임시 인식 이미지만 삭제한다.
+
+
+## 0.26 · 빌드 26 · 버전 통일과 실행 시 알림
+
+scripts/sync-version.py는 CFBundleVersion에서 CFBundleShortVersionString과 web/version.js를 생성한다. Android versionCode는 같은 정수이고 versionName도 생성된 plist를 따른다. 네이티브 updateCheck는 공개 source.json을 HTTPS로 요청해 buildVersion과 플랫폼별 다운로드 주소를 JS에 전달한다. 실행 때 자동 확인하고 설정에서는 수동 재확인한다. 업데이트 알림은 열린 입력창이 닫힌 후 표시한다. 버전 문자열 대신 정수 빌드로 비교한다.
+
+이전 공개 Releases의 unsigned IPA plist와 웹 표시, APK manifest와 웹 표시를 교정한다. APK는 현재 CI 테스트 키로 다시 서명하고 aapt·apksigner로 검증한다. 서명키를 업로드하지 않는다. 이전에 설치한 APK와 서명 호환은 보장하지 않는다.

@@ -6,7 +6,7 @@
 
 1. 저장소 **Actions → Build iPhone IPA**에서 성공한 실행을 엽니다. 새로 빌드하려면 **Run workflow**를 선택합니다.
 2. 실행 페이지 아래 **Artifacts → stay-calm-iphone**을 다운로드하고 ZIP을 풉니다.
-3. **stay-calm-25.ipa**를 아이폰에 저장하고 SideStore의 앱 추가 메뉴에서 선택해 서명·설치합니다.
+3. **stay-calm-26.ipa**를 아이폰에 저장하고 SideStore의 앱 추가 메뉴에서 선택해 서명·설치합니다.
 
 iOS 16 이상, arm64 iPhone 세로 화면을 대상으로 합니다. 빌드는 GitHub의 macOS에서 Xcode 도구로 실행합니다. CI에는 Apple 계정, 인증서, 개인 키가 필요하지 않습니다. 서명은 설치 단계에서 진행합니다. 설치 후 데이터는 기기에 저장됩니다.
 
@@ -29,9 +29,9 @@ iOS 16 이상, arm64 iPhone 세로 화면을 대상으로 합니다. 빌드는 G
 - 원래 기획은 [concept.md](docs/concept.md), 실제 구현과 안드로이드 이식 기준은 [android-handoff.md](docs/android-handoff.md)에 있습니다.
 - `web/`의 화면과 집계 코드는 두 플랫폼이 함께 사용할 수 있습니다. 아이폰은 `ios/App.swift`에서 진동과 사진 선택, 한국어 글자 인식을 연결합니다.
 - 일반 브라우저 확인은 저장소 루트에서 `python3 -m http.server 8000`을 실행한 뒤 `http://localhost:8000/web/`을 엽니다. 브라우저에서는 색상 칸을 찾아 시간을 추정하며, 이름 인식은 iOS에서 제공됩니다.
-- `node --test tests/*.cjs`로 기록·통계 규칙을 검사합니다. macOS와 iPhoneOS SDK가 있는 환경에서 `bash scripts/build-ios.sh`를 실행하면 `dist/stay-calm-25.ipa`를 만듭니다.
+- `node --test tests/*.cjs`로 기록·통계 규칙을 검사합니다. macOS와 iPhoneOS SDK가 있는 환경에서 `bash scripts/build-ios.sh`를 실행하면 `dist/stay-calm-26.ipa`를 만듭니다.
 
-IPA 파일명은 앱의 빌드 번호를 사용합니다. 이번 수정본은 25번이며 새 버전을 배포할 때 ios/Info.plist의 CFBundleVersion을 1씩 올립니다. 동일 버전의 빌드를 재실행하면 같은 번호를 사용합니다.
+IPA 파일명은 앱의 빌드 번호를 사용합니다. 이번 수정본은 26번이며 새 버전을 배포할 때 ios/Info.plist의 CFBundleVersion을 1씩 올립니다. 동일 버전의 빌드를 재실행하면 같은 번호를 사용합니다.
 
 설정의 **최신 버전 확인**에서 GitHub Releases를 엽니다. 공개 배포 시 Feather 소스 주소는 https://github.com/privategames07-dot/Stay-Calm/releases/latest/download/source.json 입니다. 같은 앱 식별자와 서명 팀으로 새 IPA를 덮어 설치합니다.
 
@@ -54,3 +54,7 @@ iPad 세로·가로 지원과 태블릿 중앙 정렬을 추가했습니다.
 탭 이름과 횟수 표현을 인내·인내한 횟수로 통일했습니다.
 
 설정에서 테스트용 스킬 초기화(강화 코인 환급), 로그 전체 삭제(코인·구매 보존), 캐시 삭제를 사용할 수 있습니다. 로그 삭제는 원본 로그와 최고 콤보도 삭제합니다.
+
+## 시험판 버전과 업데이트 알림
+
+표시 버전은 0.<빌드 번호>로 생성합니다. 빌드 26은 0.26입니다. 앱은 실행할 때 GitHub Releases의 source.json을 불러오고 정수 빌드 번호로 비교합니다. 새 버전이면 다운로드 알림을 표시하고, 오프라인이면 평소대로 실행합니다. 설정의 업데이트 확인으로 다시 검사할 수 있습니다. 이전 공개 릴리스도 표시 버전·패키지 메타데이터·Feather 소스를 같은 규칙으로 맞춥니다.
