@@ -70,3 +70,14 @@ html,body,main,dialog { touch-action:pan-x pan-y; }
 
 html,body { overflow:hidden; overscroll-behavior:none; }
 #screen.home { overflow:hidden; overscroll-behavior:none; touch-action:none; }
+
+#critical:not(:empty) { display:block;color:#bf2635;font-weight:800;margin-top:4px; }
+html,body { width:100%; }
+#screen { width:100%; }
+.hero-context { max-width:100%; overflow-wrap:anywhere; }
+@media(min-width:600px) {
+  #screen.home { display:grid;grid-template-rows:minmax(0,1fr) auto minmax(0,1fr);justify-items:center;justify-content:stretch; }
+  .home .hero-context { align-self:start;max-width:640px; }
+  .home .counter { align-self:end;max-width:640px; }
+  .home .target-wrap { grid-row:2; }
+}

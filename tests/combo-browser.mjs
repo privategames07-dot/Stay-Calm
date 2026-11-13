@@ -154,5 +154,35 @@ try{
     touch:getComputedStyle(screen).touchAction
   })`);
   assert.deepEqual(fixedHome,{fixed:true,top:0,touch:'none'});
+  const unlocks=await evaluate(`(()=>{
+    clearInterval(petTimer);
+    let shop=inventory();shop.levels={critical:4,fever:9,pet:19,petPower:4};
+    write('shop',shop);go('상점');
+    const row=name=>[...document.querySelectorAll('#screen .row')].find(r=>r.querySelector('b')?.textContent.startsWith(name));
+    const gated=['크리티컬 히트','피버 진입 완화','🐢'].every(name=>row(name).querySelector('button').disabled);
+    shop=inventory();shop.levels={critical:5,fever:10,pet:20,petPower:4};write('shop',shop);render();
+    const enabled=['크리티컬 히트','피버 진입 완화','🐢'].every(name=>!row(name).querySelector('button').disabled);
+    row('🐢').querySelector('button').click();
+    document.querySelector('#sheet .primary').click();
+    const bought=inventory().levels.turtle===1;
+    clearInterval(petTimer);
+    return {gated,enabled,bought};
+  })()`);
+  assert.deepEqual(unlocks,{gated:true,enabled:true,bought:true});
+  for(const [width,height] of [[768,1024],[1024,768]]){
+    await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:2,mobile:true});
+    await evaluate("go('참기')");
+    await wait(300);
+    const layout=await evaluate(`(()=>{
+      const target=document.querySelector('#tap').getBoundingClientRect(),content=screen.getBoundingClientRect(),counter=document.querySelector('.counter').getBoundingClientRect();
+      return {centered:Math.abs((target.left+target.width/2)-(content.left+content.width/2))<2,fit:counter.bottom<=content.bottom&&target.left>=content.left&&target.right<=content.right};
+    })()`);
+    assert.deepEqual(layout,{centered:true,fit:true});
+  }
+  for(const theme of ['ink','nova']){
+    await evaluate(`(()=>{const shop=inventory();shop.equipped={all:'${theme}'};write('shop',shop);go('참기');document.querySelector('#tap').click();})()`);
+    await wait(150);
+    assert.equal(await evaluate("!!document.querySelector('.ember-layer')"),true);
+  }
   console.log('Passed: enlarged hitbox, 100th tap ascent, fireworks title, uninterrupted input.');
 }finally{ws?.close();app.kill('SIGKILL');await wait(250);await rm(dir,{recursive:true,force:true,maxRetries:3,retryDelay:100});}

@@ -16,7 +16,7 @@ const ComboEffects = (() => {
     const ctx=canvas.getContext('2d');
     const reduce=matchMedia('(prefers-reduced-motion: reduce)');
     let particles=[],frame=0,previous=0,phase=-Math.PI/2;
-    let coverage=0,contacts=0,nextEmission=0;
+    let coverage=0,contacts=0,nextEmission=0,inkDrops=[],shockwaves=[];
     let width=0,height=0,radius=0,restoreTimer,flight=null,lettering=null;
     const ink=disc.querySelector('.ink');
     const hot=['#ffbd46','#ff8735','#f85625','#ffcc5b'];
@@ -26,7 +26,8 @@ const ComboEffects = (() => {
       frost:['#a5e6ff','#3a99ce','#eefaff'],
       bolt:['#b596ff','#7950f4','#d7e8ff'],
       meteor:['#ffbc43','#ed7535','#fff4ab'],
-      aurora:['#26d5ad','#4eb9fc','#bc89ff']
+      aurora:['#26d5ad','#4eb9fc','#bc89ff'],
+      nova:['#e52b3b','#ff7350','#fff3ca']
     };
     const palette=colors[theme];
     function themedRim(span,now){
@@ -38,6 +39,7 @@ const ComboEffects = (() => {
           const a=phase+span*i/steps;
           let r=radius;
           if(theme==='aurora')r+=4*Math.sin(5*a+now*.002+band)+band*3;
+          if(theme==='nova')r+=Math.sin(i*7.3)*4;
           if(theme==='bolt')r+=6*Math.sin(i*17+Math.floor(now/100)*2);
           const x=width/2+r*Math.cos(a), y=height/2+r*Math.sin(a);
           if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
@@ -77,17 +79,33 @@ const ComboEffects = (() => {
       frame=0;
       const dt=Math.min(.04,Math.max(0,(now-previous)/1000));previous=now;
       ctx.clearRect(0,0,width,height);
+      inkDrops=inkDrops.filter(drop=>drop.age<.9);
+      for(const drop of inkDrops){
+        drop.age+=dt;
+        const size=drop.size*(1+drop.age*2);
+        const gradient=ctx.createRadialGradient(drop.x,drop.y,0,drop.x,drop.y,size);
+        gradient.addColorStop(0,'rgba(24,28,35,'+(.32*Math.max(0,1-drop.age/.9))+')');
+        gradient.addColorStop(1,'rgba(24,28,35,0)');
+        ctx.fillStyle=gradient;ctx.beginPath();ctx.arc(drop.x,drop.y,size,0,tau);ctx.fill();
+      }
+      shockwaves=shockwaves.filter(wave=>wave.age<.8);
+      for(const wave of shockwaves){
+        wave.age+=dt;ctx.strokeStyle='rgba(255,85,40,'+(1-wave.age/.8)+')';
+        ctx.lineWidth=5*(1-wave.age/.8);ctx.beginPath();
+        ctx.arc(width/2,height/2,radius*(1+wave.age*1.5),0,tau);ctx.stroke();
+      }
       if(contacts){
         phase=(phase+dt*(1.8+coverage*1.8))%tau;
         const span=tau*coverage;
         // A continuous hot rim sits beneath the individual clockwise trails.
         ctx.lineCap='round';
-        if(palette)themedRim(span,now);
+        if(theme==='ink'){}
+        else if(palette)themedRim(span,now);
         else for(const [stroke,thickness] of [['rgba(255,105,27,.22)',8],['#ff8e30',3.5],['#ffe6a1',1.4]]){
           ctx.strokeStyle=stroke;ctx.lineWidth=thickness;
           ctx.beginPath();ctx.arc(width/2,height/2,radius,phase,phase+span);ctx.stroke();
         }
-        if(now>=nextEmission){emitSparks();nextEmission=now+55;}
+        if(theme!=='ink'&&now>=nextEmission){emitSparks();nextEmission=now+55;}
       }
       particles=particles.filter(p=>p.age+dt<p.life);
       ctx.lineCap='round';
@@ -102,7 +120,7 @@ const ComboEffects = (() => {
         ctx.fillStyle='#fff1a4';ctx.fillRect(x-.65,y-.65,1.3,1.3);
       }
       ctx.globalAlpha=1;
-      if(particles.length||contacts)frame=requestAnimationFrame(draw);
+      if(particles.length||contacts||inkDrops.length||shockwaves.length)frame=requestAnimationFrame(draw);
     }
     function wake(){
       if(!ctx)return;
@@ -158,14 +176,26 @@ const ComboEffects = (() => {
       flight.onfinish=reveal;
     }
     return {
-      tap(n){
-        if(n<3)return;
-        if(milestone(n))celebrate(n,reduce.matches);
+      tap(n,award=milestone(n)){
+        if(theme==='ink'&&!reduce.matches&&ctx){
+          for(let i=0;i<5;i++){
+            const angle=Math.random()*tau;
+            inkDrops.push({x:width/2+radius*Math.cos(angle),y:height/2+radius*Math.sin(angle),age:0,size:8+Math.random()*14});
+          }
+          if(inkDrops.length>90)inkDrops.splice(0,inkDrops.length-90);
+          wake();
+        }
+        if(theme==='nova'&&award&&!reduce.matches&&ctx){
+          shockwaves.push({age:0});
+          firework(0,0,'#ff4b2e',90);
+        }
+        if(n<3&&!award)return;
+        if(award)celebrate(n,reduce.matches);
         if(!reduce.matches&&ctx)sparks(n);
       },
       endStreak(){contacts=0;coverage=0;nextEmission=0;},
       destroy(){
-        clearAward();observer.disconnect();cancelAnimationFrame(frame);particles=[];
+        clearAward();observer.disconnect();cancelAnimationFrame(frame);particles=[];inkDrops=[];shockwaves=[];
         canvas.remove();banner.remove();
       }
     };

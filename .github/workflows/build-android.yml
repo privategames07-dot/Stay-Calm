@@ -61,6 +61,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           build="$(python3 -c "import plistlib; print(plistlib.load(open('ios/Info.plist','rb'))['CFBundleVersion'])")"
+          for attempt in {1..30}; do
+            if gh release view "build-$build"; then break; fi
+            sleep 10
+          done
           gh release view "build-$build"
           gh release upload "build-$build" dist/*.apk --clobber
     permissions:

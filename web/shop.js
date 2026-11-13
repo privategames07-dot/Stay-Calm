@@ -4,7 +4,9 @@ const effectCatalog = [
   {id:'frost', name:'서리 결정', cost:500, detail:'얼음빛 테두리에서 흩날리는 눈 결정'},
   {id:'bolt', name:'번개', cost:2500, detail:'갈라진 보랏빛 전류와 전기 스파크'},
   {id:'meteor', name:'유성우', cost:5000, detail:'금빛 꼬리를 끌며 비스듬히 떨어지는 유성'},
-  {id:'aurora', name:'오로라', cost:10000, detail:'원 둘레를 물결치는 세 겹의 빛과 별'}
+  {id:'aurora', name:'오로라', cost:10000, detail:'원 둘레를 물결치는 세 겹의 빛과 별'},
+  {id:'ink', name:'수묵화 먹물 번짐', cost:15000, detail:'터치마다 테두리에서 먹물이 은은히 번져 사라져'},
+  {id:'nova', name:'초신성 폭발', cost:30000, detail:'붉은 균열이 달아오르고 피버 진입 시 에너지가 분출돼'}
 ];
 function subjectKey(slot){
   return slot ? 'course:'+slot.name.trim().normalize('NFC') : 'outside';
@@ -45,22 +47,23 @@ function shopView(subject=subjectKey(current(new Date()).slot)){
   screen.append(heading,el('h2','성장'),sub('클릭 점수 1점마다 1크레딧을 얻어.'));
   for(const skill of Growth.skills){
     const level=shop.levels[skill.id]||0;
-    const price=Growth.cost(skill,level);
+    const price=Growth.cost(skill,level),locked=Growth.locked(skill.id,shop.levels);
     const row=el('div',null,'row'),info=el('span');
-    info.append(el('b',skill.name+' · Lv.'+((skill.id==='tap'||skill.id==='petPower')?level+1:level)),el('small',Growth.detail(skill.id,Math.min(level+1,skill.max??Infinity))));
+    info.append(el('b',skill.name+' · Lv.'+(level+(skill.displayOffset??((skill.id==='tap'||skill.id==='petPower')?1:0)))),el('small',locked||Growth.detail(skill.id,Math.min(level+1,skill.max??Infinity))));
     const buy=btn(price.toLocaleString()+' 강화',()=>upgrade(skill,level),'secondary');
+    if(locked){buy.disabled=true;buy.textContent='잠김';}
     if(level>=skill.max){buy.disabled=true;buy.textContent='최대 레벨';}
     row.append(info,buy);screen.append(row);
   }
   screen.append(el('h2','과목 이펙트'),field('적용할 수업',chooser));
   function upgrade(skill,level,cheat=false){
     const latest=inventory(),price=Growth.cost(skill,level);
-    if(level>=skill.max||(latest.levels[skill.id]||0)!==level){close();refresh();return;}
+    if(Growth.locked(skill.id,latest.levels)||level>=skill.max||(latest.levels[skill.id]||0)!==level){close();refresh();return;}
     const available=creditBalance(latest);
     if(available<price&&!cheat){offerCheat(skill.name,price-available,()=>upgrade(skill,level,true));return;}
     latest.levels[skill.id]=level+1;
     latest.skillSpent+=cheat?0:price;
-    if(safely(()=>write('shop',latest))){close();refresh();if(skill.id==='pet'&&level===0)startPet();}
+    if(safely(()=>write('shop',latest))){close();refresh();if(['pet','turtle','turtleSpeed'].includes(skill.id))startPet();}
   }
   function offerCheat(name,missing,accept){
     const actions=el('div',null,'actions');

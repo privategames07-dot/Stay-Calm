@@ -46,3 +46,25 @@ test('펫 클릭 배수는 직접 클릭과 비용·상한을 공유하고 펫·
   assert.equal(growth.score({pet:20,petPower:99},'pet',14),1400);
   assert.equal(growth.score({pet:20,petPower:4,tap:1},'manual'),2);
 });
+test('크리티컬 확률 경계, 피해 강화 해금·최대치와 피버 곱연산',()=>{
+  assert.equal(growth.hit({critical:0},'manual',1,0).critical,false);
+  assert.equal(growth.hit({critical:10},'manual',1,.099).critical,true);
+  assert.equal(growth.hit({critical:10},'manual',1,.1).critical,false);
+  assert.equal(growth.hit({critical:4,criticalHit:19},'manual',1,0).count,5);
+  assert.equal(growth.hit({tap:4,critical:10,criticalHit:19},'manual',14,0).count,700);
+  assert.equal(growth.locked('criticalHit',{critical:5}),'');
+  assert.equal(growth.feverStage({fever:9,feverEase:10},300),null);
+  assert.equal(growth.feverStage({fever:10,feverEase:1},80),100);
+  assert.equal(growth.feverStage({fever:10,feverEase:10},20),100);
+  assert.equal(growth.feverStage({fever:10,feverEase:10},300),500);
+  assert.equal(growth.feverStage({fever:10,feverEase:10},800),1000);
+});
+test('거북이 선행조건, 비용, 속도·피해 상한과 독립 곱연산',()=>{
+  assert.notEqual(growth.locked('turtle',{pet:19,petPower:4}),'');
+  assert.equal(growth.locked('turtle',{pet:20,petPower:4}),'');
+  assert.equal(growth.cost(growth.skills.find(s=>s.id==='turtle'),0),30000);
+  assert.equal(growth.turtleInterval({turtleSpeed:0}),15000);
+  assert.equal(growth.turtleInterval({turtleSpeed:10}),7500);
+  assert.equal(growth.score({turtle:1,turtleDamage:0},'turtle'),200);
+  assert.equal(growth.hit({turtle:1,turtleDamage:9,critical:10,criticalHit:19},'turtle',14,0).count,280000);
+});

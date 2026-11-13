@@ -6,7 +6,7 @@
 
 1. 저장소 **Actions → Build iPhone IPA**에서 성공한 실행을 엽니다. 새로 빌드하려면 **Run workflow**를 선택합니다.
 2. 실행 페이지 아래 **Artifacts → stay-calm-iphone**을 다운로드하고 ZIP을 풉니다.
-3. **stay-calm-19.ipa**를 아이폰에 저장하고 SideStore의 앱 추가 메뉴에서 선택해 서명·설치합니다.
+3. **stay-calm-20.ipa**를 아이폰에 저장하고 SideStore의 앱 추가 메뉴에서 선택해 서명·설치합니다.
 
 iOS 16 이상, arm64 iPhone 세로 화면을 대상으로 합니다. 빌드는 GitHub의 macOS에서 Xcode 도구로 실행합니다. CI에는 Apple 계정, 인증서, 개인 키가 필요하지 않습니다. 서명은 설치 단계에서 진행합니다. 설치 후 데이터는 기기에 저장됩니다.
 
@@ -29,12 +29,18 @@ iOS 16 이상, arm64 iPhone 세로 화면을 대상으로 합니다. 빌드는 G
 - 원래 기획은 [concept.md](docs/concept.md), 실제 구현과 안드로이드 이식 기준은 [android-handoff.md](docs/android-handoff.md)에 있습니다.
 - `web/`의 화면과 집계 코드는 두 플랫폼이 함께 사용할 수 있습니다. 아이폰은 `ios/App.swift`에서 진동과 사진 선택, 한국어 글자 인식을 연결합니다.
 - 일반 브라우저 확인은 저장소 루트에서 `python3 -m http.server 8000`을 실행한 뒤 `http://localhost:8000/web/`을 엽니다. 브라우저에서는 색상 칸을 찾아 시간을 추정하며, 이름 인식은 iOS에서 제공됩니다.
-- `node --test tests/*.cjs`로 기록·통계 규칙을 검사합니다. macOS와 iPhoneOS SDK가 있는 환경에서 `bash scripts/build-ios.sh`를 실행하면 `dist/stay-calm-19.ipa`를 만듭니다.
+- `node --test tests/*.cjs`로 기록·통계 규칙을 검사합니다. macOS와 iPhoneOS SDK가 있는 환경에서 `bash scripts/build-ios.sh`를 실행하면 `dist/stay-calm-20.ipa`를 만듭니다.
 
-IPA 파일명은 앱의 빌드 번호를 사용합니다. 이번 수정본은 19번이며 새 버전을 배포할 때 ios/Info.plist의 CFBundleVersion을 1씩 올립니다. 동일 버전의 빌드를 재실행하면 같은 번호를 사용합니다.
+IPA 파일명은 앱의 빌드 번호를 사용합니다. 이번 수정본은 20번이며 새 버전을 배포할 때 ios/Info.plist의 CFBundleVersion을 1씩 올립니다. 동일 버전의 빌드를 재실행하면 같은 번호를 사용합니다.
 
 설정의 **최신 버전 확인**에서 GitHub Releases를 엽니다. 공개 배포 시 Feather 소스 주소는 https://github.com/privategames07-dot/Stay-Calm/releases/latest/download/source.json 입니다. 같은 앱 식별자와 서명 팀으로 새 IPA를 덮어 설치합니다.
 
 ## 안드로이드
 
 Android 8.0 이상에서 APK를 설치합니다. iPhone과 web 코드를 공유하고 사진 선택·진동·한국어 OCR은 Android 브리지로 연결합니다. APK 버전은 ios/Info.plist의 번호를 따릅니다. Build Android APK 워크플로가 서명, 에뮬레이터 테스트 후 기존 build-N 릴리스에 stay-calm-N.apk를 첨부합니다. 이번 APK는 빌드 환경에서 생성하는 테스트 키로 서명합니다. 이후 버전의 덮어 설치를 보장하려면 별도 비공개 배포키를 보관해 사용해야 합니다. iPhone에 저장된 기록은 기기별 데이터입니다.
+
+크리티컬 확률은 Lv.0~10에서 0~10%이며 수동·토끼·거북이 모두 적용됩니다. 크리티컬 피해는 기본 5배, 확률 Lv.5에서 피해 강화가 해금되어 Lv.20에 10배가 됩니다. 피버 계수 Lv.10이면 진입 완화 Lv.0~10을 강화해 단계당 20콤보를 줄일 수 있습니다(첫 단계는 최소 20콤보).
+
+기존 기본 펫은 토끼로 표시합니다. 토끼 Lv.20와 클릭 배수 Lv.5 달성 후 30,000크레딧으로 거북이를 추가합니다. 기본 15초마다 200점이며 속도 Lv.10은 2배속, 피해 Lv.10은 2,000점입니다. 토끼와 함께 활동하고 크리티컬·피버가 곱해집니다. 수묵화는 15,000, 초신성은 30,000크레딧으로 해금합니다.
+
+iPad 세로·가로 지원과 태블릿 중앙 정렬을 추가했습니다.
