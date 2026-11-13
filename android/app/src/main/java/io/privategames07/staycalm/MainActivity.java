@@ -85,6 +85,13 @@ public class MainActivity extends Activity {
                             case "feedback":
                                 web.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
                                 break;
+                            case "cache":
+                                web.clearCache(true);
+                                worker.execute(() -> {
+                                    if (importImage != null) { importImage.recycle(); importImage = null; }
+                                    js("window.cacheCleared()");
+                                });
+                                break;
                             case "updates":
                                 startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/privategames07-dot/Stay-Calm/releases/latest")));
                                 break;

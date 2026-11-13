@@ -21,8 +21,8 @@ function inventory(){
   return shop;
 }
 function creditBalance(shop){
-  let earned=0;
-  const prefix=storagePrefix+'day.';
+  let earned=logState().creditCarry;
+  const prefix=storagePrefix+dayPrefix();
   for(let i=0;i<localStorage.length;i++){
     const key=localStorage.key(i);
     if(key.startsWith(prefix))earned+=Calm.count(events(key.slice(prefix.length)));

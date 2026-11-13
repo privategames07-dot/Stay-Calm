@@ -24,6 +24,7 @@ final class CalmViewController: UIViewController, WKScriptMessageHandler, PHPick
     override func loadView() {
         let configuration = WKWebViewConfiguration()
         configuration.ignoresViewportScaleLimits = false
+        configuration.userContentController.add(self, name: "cache")
         configuration.userContentController.add(self, name: "updates")
         configuration.userContentController.add(self, name: "feedback")
         configuration.userContentController.add(self, name: "timetable")
@@ -46,6 +47,14 @@ final class CalmViewController: UIViewController, WKScriptMessageHandler, PHPick
     }
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard message.frameInfo.isMainFrame, message.frameInfo.request.url?.isFileURL == true else { return }
+        if message.name == "cache" {
+            importImage = nil
+            URLCache.shared.removeAllCachedResponses()
+            web.configuration.websiteDataStore.removeData(ofTypes: [WKWebsiteDataTypeDiskCache, WKWebsiteDataTypeMemoryCache], modifiedSince: .distantPast) { [weak self] in
+                self?.web.evaluateJavaScript("window.cacheCleared()")
+            }
+            return
+        }
         if message.name == "updates", let url = URL(string: "https://github.com/privategames07-dot/Stay-Calm/releases/latest") {
             UIApplication.shared.open(url)
             return

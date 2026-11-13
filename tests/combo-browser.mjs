@@ -237,5 +237,27 @@ try{
     return {stable:before.top===after.top&&before.height===after.height,gold:document.querySelector('.target-wrap').classList.contains('critical-on'),active,ended:factorAt(Date.now())===1&&!screen.classList.contains('fever-active')&&!document.querySelector('.speed-lines')};
   })()`);
   assert.deepEqual(criticalFX,{stable:true,gold:true,active:true,ended:true});
+  const maintenance=await evaluate(`(async()=>{
+    clearInterval(petTimer);
+    let shop=inventory();shop.levels={tap:3,pet:20,turtle:1};shop.skillSpent=5000;write('shop',shop);
+    const before=creditBalance(inventory()),cosmetics=JSON.stringify(shop.paid),raw=JSON.stringify(events(Calm.key(new Date())));
+    go('설정');const action=label=>[...document.querySelectorAll('#screen button')].find(b=>b.textContent===label);
+    action('스킬 초기화 (테스트)').click();document.querySelector('#sheet .secondary').click();
+    const canceled=inventory().levels.tap===3;
+    action('스킬 초기화 (테스트)').click();document.querySelector('#sheet .primary').click();
+    const refunded=creditBalance(inventory())===before+5000,reset=Object.values(inventory().levels).every(v=>v===0);
+    const kept=JSON.stringify(events(Calm.key(new Date())))===raw&&JSON.stringify(inventory().paid)===cosmetics;
+    const wallet=creditBalance(inventory());
+    action('로그 삭제').click();document.querySelector('#sheet .primary').click();
+    const deleted=events(Calm.key(new Date())).length===0&&allTimeBests().size===0;
+    const conserved=creditBalance(inventory())===wallet;
+    saveClicks(null,new Date(),'manual',2);
+    const continued=events(Calm.key(new Date())).length===1&&creditBalance(inventory())===wallet+2;
+    const snapshot=JSON.stringify(events(Calm.key(new Date())));
+    clearCache();await new Promise(r=>setTimeout(r,200));
+    const cacheSafe=JSON.stringify(events(Calm.key(new Date())))===snapshot;
+    return {canceled,refunded,reset,kept,deleted,conserved,continued,cacheSafe};
+  })()`);
+  assert.deepEqual(maintenance,{canceled:true,refunded:true,reset:true,kept:true,deleted:true,conserved:true,continued:true,cacheSafe:true});
   console.log('Passed: enlarged hitbox, 100th tap ascent, fireworks title, uninterrupted input.');
 }finally{ws?.close();app.kill('SIGKILL');await wait(250);await rm(dir,{recursive:true,force:true,maxRetries:3,retryDelay:100});}

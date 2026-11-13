@@ -44,6 +44,9 @@ public class AppSmokeTest {
             assertEquals("true",evaluate(scenario,"Growth.score({pet:20,petPower:4},'pet',14)===1400"));
             assertEquals("true",evaluate(scenario,"go('상점');document.querySelector('select').options[0].textContent==='전체'"));
             assertEquals("true",evaluate(scenario,"go('인내');getComputedStyle(screen).touchAction==='none'"));
+            assertEquals("true",evaluate(scenario,"window.webkit.messageHandlers.cache.postMessage('clear');true"));
+            Thread.sleep(500);
+            assertEquals("true",evaluate(scenario,"events(Calm.key(new Date())).length===1"));
             CountDownLatch finished=new CountDownLatch(1);
             String[] recognized=new String[1];
             scenario.onActivity(activity -> new Thread(() -> {

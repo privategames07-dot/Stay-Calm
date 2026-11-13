@@ -49,12 +49,15 @@ const sheet=$('#sheet'),drawer=$('#drawer');
 function message(s){const n=$('#notice');n.textContent=s;n.style.display='block';clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>n.style.display='none',2400);}
 function safely(fn){try{fn();return true;}catch(e){message('저장하지 못했어. 저장 공간을 확인해줘.');return false;}}
 function saveSlots(next){return safely(()=>{write('slots',next);slots=next;});}
-function events(day){return read('day.'+day,[]);}
+function logState(){return read('logState',{epoch:'',creditCarry:0});}
+function dayPrefix(){const epoch=logState().epoch;return epoch?'logs.'+epoch+'.day.':'day.';}
+function dayKey(day){return dayPrefix()+day;}
+function events(day){return read(dayKey(day),[]);}
 function allTimeBests(){
-  let list=[];
+  let list=[];const prefix=storagePrefix+dayPrefix();
   for(let i=0;i<localStorage.length;i++){
     const key=localStorage.key(i);
-    if(key.startsWith(storagePrefix+'day.'))list=list.concat(events(key.slice((storagePrefix+'day.').length)));
+    if(key.startsWith(prefix))list=list.concat(events(key.slice(prefix.length)));
   }
   return Calm.bestCombos(list);
 }
@@ -112,7 +115,7 @@ function saveClicks(slot,date,source,count,critical=false,comboValue){
   const last=list.at(-1);
   if(source!=='manual'&&last?.source===source&&last.critical===critical&&last.clock===e.clock&&last.slot?.id===slot?.id&&last.slot?.name===slot?.name)last.count=Math.round((last.count+count)*10)/10;
   else list.push(e);
-  if(!safely(()=>write('day.'+e.day,list)))return false;
+  if(!safely(()=>write(dayKey(e.day),list)))return false;
   if(page==='인내'&&$('#amount'))$('#amount').textContent=Calm.count(list.filter(v=>v.slot?.id===slot?.id))+'회';
   return true;
 }
@@ -263,7 +266,37 @@ function statsView(){
 function settings(){
   screen.append(el('h1','설정'));const list=el('div',null,'list');
   [['haptics','탭 진동','버튼을 누를 때 가볍게 진동'],['effects','콤보 효과','붉은 배경, 브레이크 불티와 달성 불꽃놀이']].forEach(([k,title,desc])=>{const row=el('label',null,'row'),txt=el('span');txt.append(el('b',title),el('small',desc));const check=input('checkbox','');check.checked=options[k];check.onchange=()=>{const next={...options,[k]:check.checked};if(safely(()=>write('settings',next)))options=next;else check.checked=options[k];};row.append(txt,check);list.append(row);});
-  screen.append(list,sub('소리는 항상 꺼져 있어. 시간표와 기록은 이 기기에 저장돼.'),sub('stay calm! · 3.3 (24)'),btn('원본 로그',()=>rawLogs(selectedDay),'small-link'),btn('최신 버전 확인',()=>{const bridge=window.webkit?.messageHandlers?.updates;if(bridge)bridge.postMessage('open');else window.open('https://github.com/privategames07-dot/Stay-Calm/releases/latest','_blank','noopener');},'small-link'));
+  screen.append(list,sub('소리는 항상 꺼져 있어. 시간표와 기록은 이 기기에 저장돼.'),sub('stay calm! · 3.4 (25)'),btn('원본 로그',()=>rawLogs(selectedDay),'small-link'),btn('스킬 초기화 (테스트)',resetSkills,'small-link'),btn('로그 삭제',deleteLogs,'small-link'),btn('캐시 삭제',clearCache,'small-link'),btn('최신 버전 확인',()=>{const bridge=window.webkit?.messageHandlers?.updates;if(bridge)bridge.postMessage('open');else window.open('https://github.com/privategames07-dot/Stay-Calm/releases/latest','_blank','noopener');},'small-link'));
+}
+function resetSkills(){
+  const actions=el('div',null,'actions');
+  actions.append(btn('취소',close,'secondary'),btn('초기화',()=>{
+    const shop=inventory();shop.levels={};shop.skillSpent=0;
+    if(safely(()=>write('shop',shop))){resetCombo();startPet();close();render();message('스킬 초기화와 강화 코인 환급 완료');}
+  },'primary'));
+  show('스킬을 초기화할까?',sub('모든 강화와 거북이 해금을 초기화하고 실제 사용한 강화 코인을 돌려줘.'),actions);
+}
+function deleteLogs(){
+  const actions=el('div',null,'actions');
+  actions.append(btn('취소',close,'secondary'),btn('로그 전체 삭제',()=>{
+    const shop=inventory(),earned=creditBalance(shop)+shop.skillSpent+Object.values(shop.paid).reduce((sum,n)=>sum+n,0);
+    const oldKeys=[];
+    for(let i=0;i<localStorage.length;i++){
+      const key=localStorage.key(i);
+      if(key.startsWith(storagePrefix+'day.')||key.startsWith(storagePrefix+'logs.'))oldKeys.push(key);
+    }
+    if(!safely(()=>write('logState',{epoch:Calm.uuid(),creditCarry:Math.round(earned*10)/10})))return;
+    for(const key of oldKeys){try{localStorage.removeItem(key);}catch{}}
+    resetCombo();close();render();message('기록과 최고 콤보를 삭제했어.');
+  },'primary'));
+  show('로그를 전부 삭제할까?',sub('모든 날짜의 기록·원본 로그·최고 콤보가 삭제돼. 현재 코인과 구매 내역은 보관돼.'),actions);
+}
+window.cacheCleared=()=>message('캐시를 삭제했어.');
+function clearCache(){
+  const native=window.webkit?.messageHandlers?.cache;
+  if(native){native.postMessage('clear');return;}
+  if(!window.caches){window.cacheCleared();return;}
+  caches.keys().then(keys=>Promise.all(keys.map(key=>caches.delete(key)))).then(window.cacheCleared).catch(()=>message('캐시를 삭제하지 못했어.'));
 }
 function rawLogs(day){
   const raw=el('pre',JSON.stringify(events(day),null,2),'raw-log');
