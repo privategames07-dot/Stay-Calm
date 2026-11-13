@@ -23,12 +23,14 @@ final class CalmViewController: UIViewController, WKScriptMessageHandler, PHPick
     override var preferredStatusBarStyle: UIStatusBarStyle { .darkContent }
     override func loadView() {
         let configuration = WKWebViewConfiguration()
+        configuration.ignoresViewportScaleLimits = false
         configuration.userContentController.add(self, name: "updates")
         configuration.userContentController.add(self, name: "feedback")
         configuration.userContentController.add(self, name: "timetable")
         configuration.userContentController.add(self, name: "courseNames")
         web = WKWebView(frame: .zero, configuration: configuration)
         web.navigationDelegate = self
+        web.scrollView.pinchGestureRecognizer?.isEnabled = false
         web.scrollView.contentInsetAdjustmentBehavior = .never
         web.backgroundColor = .white
         view = web

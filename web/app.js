@@ -12,9 +12,33 @@ catch(e){document.body.textContent='저장된 기록을 열 수 없어. 앱을 �
 let page='참기',selectedDay=Calm.key(new Date()),week=selectedDay,weekday=new Date().getDay();
 const comboWindowMs=5000;
 const comboPauseMs=1000;
-let feverUntil=0,feverMultiplier=1;
+let feverUntil=0,feverMultiplier=1,feverEndTimer;
 function factorAt(now){return now<feverUntil?feverMultiplier:1;}
+function makeSpeedLines(){
+  const layer=el('div',null,'speed-lines');
+  layer.setAttribute('aria-hidden','true');
+  const width=screen.clientWidth,height=screen.clientHeight;
+  for(let i=0;i<36;i++){
+    const side=i%4,along=((i*.618034+.17)%1)*.94+.03;
+    const x=side===0?0:side===2?1:along;
+    const y=side===1?0:side===3?1:along;
+    const ray=el('i');
+    ray.style.left=x*100+'%';ray.style.top=y*100+'%';
+    ray.style.setProperty('--angle',Math.atan2((y-.5)*height,(x-.5)*width)+'rad');
+    ray.style.setProperty('--length',(8+i%7)+'vmin');
+    ray.style.animationDelay=-(i*.127)+'s';
+    ray.style.animationDuration=(.46+(i%5)*.07)+'s';
+    layer.append(ray);
+  }
+  return layer;
+}
 function showFever(now){
+  const boosted=now<feverUntil&&options.effects&&page==='참기'&&!document.hidden;
+  if(boosted!==screen.classList.contains('fever-active')){
+    screen.classList.toggle('fever-active',boosted);
+    if(boosted)screen.prepend(makeSpeedLines());
+    else screen.querySelector('.speed-lines')?.remove();
+  }
   const label=$('#fever');
   if(label)label.textContent=now<feverUntil?'피버 ×'+Number(feverMultiplier.toFixed(2))+' · '+Math.ceil((feverUntil-now)/1000)+'초':'';
 }
@@ -104,7 +128,7 @@ function record(s,d){
   const levels=inventory().levels,award=ComboEffects.milestone(nextCombo);
   const factor=award?Growth.feverFactor(levels.fever,nextCombo):factorAt(now);
   if(!saveClicks(s,d,'manual',Growth.score(levels,'manual',factor)))return;
-  if(award){feverMultiplier=factor;feverUntil=now+Growth.feverMs;showFever(now);}
+  if(award){feverMultiplier=factor;feverUntil=now+Growth.feverMs;showFever(now);clearTimeout(feverEndTimer);feverEndTimer=setTimeout(()=>showFever(Date.now()),Math.max(0,feverUntil-Date.now()));}
   combo=nextCombo;comboSession=session;previous=now;
   if(options.haptics)window.webkit?.messageHandlers?.feedback?.postMessage('tap');
   if(options.effects){
@@ -189,7 +213,7 @@ function statsView(){
 function settings(){
   screen.append(el('h1','설정'));const list=el('div',null,'list');
   [['haptics','탭 진동','버튼을 누를 때 가볍게 진동'],['effects','콤보 효과','붉은 배경, 브레이크 불티와 달성 불꽃놀이']].forEach(([k,title,desc])=>{const row=el('label',null,'row'),txt=el('span');txt.append(el('b',title),el('small',desc));const check=input('checkbox','');check.checked=options[k];check.onchange=()=>{const next={...options,[k]:check.checked};if(safely(()=>write('settings',next)))options=next;else check.checked=options[k];};row.append(txt,check);list.append(row);});
-  screen.append(list,sub('소리는 항상 꺼져 있어. 시간표와 기록은 이 기기에 저장돼.'),sub('stay calm! · 2.3 (14)'),btn('최신 버전 확인',()=>{const bridge=window.webkit?.messageHandlers?.updates;if(bridge)bridge.postMessage('open');else window.open('https://github.com/privategames07-dot/Stay-Calm/releases/latest','_blank','noopener');},'small-link'));
+  screen.append(list,sub('소리는 항상 꺼져 있어. 시간표와 기록은 이 기기에 저장돼.'),sub('stay calm! · 2.4 (15)'),btn('최신 버전 확인',()=>{const bridge=window.webkit?.messageHandlers?.updates;if(bridge)bridge.postMessage('open');else window.open('https://github.com/privategames07-dot/Stay-Calm/releases/latest','_blank','noopener');},'small-link'));
 }
 function startImport(){
   if(window.webkit?.messageHandlers?.timetable){window.webkit.messageHandlers.timetable.postMessage('pick');return;}

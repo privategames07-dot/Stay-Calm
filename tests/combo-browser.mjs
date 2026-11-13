@@ -43,6 +43,15 @@ try{
   await evaluate('resetCombo()');
   const result=await evaluate(`(async()=>{const tap=document.querySelector('#tap');for(let i=0;i<100;i++)tap.click();const lifting=document.querySelector('.disc').classList.contains('lifting');tap.click();await new Promise(r=>setTimeout(r,1150));return {lifting,title:document.querySelector('.combo-award').textContent,count:document.querySelector('#amount').textContent};})()`);
   assert.deepEqual(result,{lifting:true,title:'100 Combo!',count:'154회'});
+  const feverUI=await evaluate(`(()=>{
+    const disc=document.querySelector('.disc');
+    const zoom=disc.getBoundingClientRect().width/disc.offsetWidth;
+    const lines=document.querySelector('.speed-lines');
+    const selection=getComputedStyle(document.querySelector('h1')).userSelect;
+    showFever(feverUntil);
+    return {large:zoom>1.1,lines:lines.children.length,ended:!lines.isConnected,selection};
+  })()`);
+  assert.deepEqual(feverUI,{large:true,lines:36,ended:true,selection:'none'});
   await evaluate("resetCombo(); for(let i=0;i<3;i++)document.querySelector('#tap').click()");
   const barState = () => evaluate(`(() => {
     const track=document.querySelector('.combo-track').getBoundingClientRect();
@@ -121,5 +130,16 @@ try{
     return {spent,manual,source:pet.source,count:pet.count};
   })()`);
   assert.deepEqual(growth,{spent:20,manual:2,source:'pet',count:1});
+  const editor=await evaluate(`(()=>{
+    go('시간표');
+    [...document.querySelectorAll('#screen button')].find(b=>b.textContent==='수업 추가').click();
+    const name=document.querySelector('#sheet input[type=text]');
+    name.focus();name.value='테스트 수업';
+    const editable=getComputedStyle(name).userSelect==='text'&&document.activeElement===name;
+    close();saveSlots(Array.from({length:35},(_,i)=>({...resetFixture[0],id:'scroll-'+i,weekday})));
+    render();screen.scrollTop=80;
+    return {editable,scrolled:screen.scrollTop>0};
+  })()`);
+  assert.deepEqual(editor,{editable:true,scrolled:true});
   console.log('Passed: enlarged hitbox, 100th tap ascent, fireworks title, uninterrupted input.');
 }finally{ws?.close();app.kill('SIGKILL');await wait(250);await rm(dir,{recursive:true,force:true,maxRetries:3,retryDelay:100});}
