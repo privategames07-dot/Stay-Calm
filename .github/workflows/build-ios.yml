@@ -6,6 +6,7 @@ on:
     paths:
       - 'ios/**'
       - 'web/**'
+      - 'tests/**'
       - 'scripts/build-ios.sh'
       - '.github/workflows/build-ios.yml'
 permissions:
