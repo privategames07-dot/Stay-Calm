@@ -213,7 +213,8 @@ try{
   const inkCoverage=await evaluate(`(async()=>{
     const shop=inventory();shop.levels={};shop.equipped={all:'ink'};write('shop',shop);go('참기');
     for(let i=0;i<50;i++)document.querySelector('#tap').click();
-    await new Promise(r=>setTimeout(r,150));
+    await new Promise(requestAnimationFrame);
+    await new Promise(requestAnimationFrame);
     const canvas=document.querySelector('.ember-layer'),rect=canvas.getBoundingClientRect();
     const scale=canvas.width/rect.width,r=document.querySelector('.disc').offsetWidth*scale/2;
     const pixels=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
@@ -225,6 +226,6 @@ try{
       });
     }).filter(Boolean).length;
   })()`);
-  assert.ok(inkCoverage>=68,'paint covers the circumference at 50 combo');
+  assert.ok(inkCoverage>=68,'paint covers the circumference at 50 combo: '+inkCoverage);
   console.log('Passed: enlarged hitbox, 100th tap ascent, fireworks title, uninterrupted input.');
 }finally{ws?.close();app.kill('SIGKILL');await wait(250);await rm(dir,{recursive:true,force:true,maxRetries:3,retryDelay:100});}

@@ -184,19 +184,19 @@ const ComboEffects = (() => {
     return {
       tap(n,award=milestone(n)){
         if(theme==='ink'&&!reduce.matches&&ctx){
-          const count=Math.ceil(6+30*Math.min(1,n/50));
+          const count=Math.ceil(6+54*Math.min(1,n/50));
           const offset=Math.random()*tau;
           for(let i=0;i<count;i++){
             const angle=offset+i*tau/count;
-            const size=8+Math.random()*10;
+            const size=12+Math.random()*10;
             inkDrops.push({
               x:width/2+radius*Math.cos(angle),y:height/2+radius*Math.sin(angle),
               angle:angle+Math.random()*.6,age:0,life:.65+Math.random()*.45,squash:.55+Math.random()*.6,
-              points:Array.from({length:20},(_,j)=>({angle:j*tau/20,radius:size*(j%3===0?1.1+Math.random():.4+Math.random()*.6)})),
+              points:Array.from({length:20},(_,j)=>({angle:j*tau/20,radius:size*(j%3===0?1.1+Math.random():.65+Math.random()*.35)})),
               specks:Array.from({length:8},()=>({x:(Math.random()-.25)*size*5,y:(Math.random()-.5)*size*4,r:1+Math.random()*2.8,angle:Math.random()*tau}))
             });
           }
-          if(inkDrops.length>220)inkDrops.splice(0,inkDrops.length-220);
+          if(inkDrops.length>300)inkDrops.splice(0,inkDrops.length-300);
           wake();
         }
         if(theme==='nova'&&award&&!reduce.matches&&ctx){
