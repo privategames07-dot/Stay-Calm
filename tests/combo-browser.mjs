@@ -184,5 +184,19 @@ try{
     await wait(150);
     assert.equal(await evaluate("!!document.querySelector('.ember-layer')"),true);
   }
+  const logs=await evaluate(`(()=>{
+    const slot={id:'log',name:'로그 수업',start:540,end:600};
+    const date=new Date(),day=Calm.key(date),base=Calm.tap(slot,date);
+    const rows=[{...base,clock:'09:10',source:'manual',count:2,combo:17},{...base,clock:'09:10',source:'pet',count:5}];
+    write('day.'+day,rows);window.logBefore=JSON.stringify(events(day));
+    selectedDay=day;go('기록');document.querySelector('details').open=true;
+    const summarized=document.querySelector('.minute-row').textContent.includes('직접 2회 · 펫 5회');
+    const best=document.querySelector('details').textContent.includes('최고 17콤보');
+    go('설정');[...document.querySelectorAll('#screen button')].find(b=>b.textContent==='원본 로그').click();
+    const raw=document.querySelector('.raw-log').textContent.includes('"combo": 17');
+    close();
+    return {summarized,best,raw,retained:JSON.stringify(events(day))===window.logBefore};
+  })()`);
+  assert.deepEqual(logs,{summarized:true,best:true,raw:true,retained:true});
   console.log('Passed: enlarged hitbox, 100th tap ascent, fireworks title, uninterrupted input.');
 }finally{ws?.close();app.kill('SIGKILL');await wait(250);await rm(dir,{recursive:true,force:true,maxRetries:3,retryDelay:100});}

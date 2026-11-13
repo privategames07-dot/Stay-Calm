@@ -16,3 +16,17 @@ test('수업과 시간대 순위에서 공강 및 다른 주를 제외하고 동
 test('시간표 수정 이후 당시 수업명과 날짜 유지',()=>{
   const slot={...a};const ev=C.tap(slot,mk('2026-11-16','09:59'));slot.name='변경';slot.start=600;assert.equal(ev.slot.name,'정역학');assert.equal(ev.slot.start,540);assert.equal(ev.day,'2026-11-16');
 });
+
+test('분별 수동·두 펫 점수를 합산하고 원본 로그를 유지',()=>{
+  const rows=[{clock:'09:10',count:1.1},{clock:'09:10',source:'manual',count:2.2},{clock:'09:10',source:'pet',count:5},{clock:'09:10',source:'turtle',count:200},{clock:'09:11',count:1}];
+  const before=JSON.stringify(rows);
+  assert.deepEqual(C.minuteSummary(rows),[{clock:'09:10',manual:3.3,pet:205},{clock:'09:11',manual:1,pet:0}]);
+  assert.equal(JSON.stringify(rows),before);
+});
+test('예전 로그의 콤보를 복원하고 펫을 제외하며 이름별 최고를 공유',()=>{
+  const day='2026-11-16',slot={id:'a',name:'정역학'};
+  const rows=[{day,slot,at:0},{day,slot,at:1000,source:'pet'},{day,slot,at:4500},{day,slot,at:9500},{day,slot:{id:'b',name:'정역학'},at:10000,combo:12},{day,slot:null,at:11000,combo:3}];
+  assert.equal(C.bestCombos(rows).get('정역학'),12);
+  assert.equal(C.bestCombos(rows.slice(0,4)).get('정역학'),2);
+  assert.equal(C.bestCombos(rows).get(''),3);
+});

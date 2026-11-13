@@ -32,12 +32,33 @@ const Calm = (() => {
     events.forEach(e=>{const k=key(e);counts.set(k,Math.round(((counts.get(k)||0)+(e.count??1))*10)/10);});
     return [...counts].sort((a,b)=>b[1]-a[1] || String(a[0]).localeCompare(String(b[0]),'ko',{numeric:true}));
   }
+  function minuteSummary(events){
+    const groups=new Map();
+    for(const event of events){
+      if(!groups.has(event.clock))groups.set(event.clock,{clock:event.clock,manual:0,pet:0});
+      const group=groups.get(event.clock),source=!event.source||event.source==='manual'?'manual':'pet';
+      group[source]+=Math.round((event.count??1)*10);
+    }
+    return [...groups.values()].sort((a,b)=>a.clock.localeCompare(b.clock)).map(g=>({...g,manual:g.manual/10,pet:g.pet/10}));
+  }
+  function bestCombos(events){
+    const best=new Map();let previous=null,streak=0;
+    for(const event of [...events].sort((a,b)=>a.at-b.at)){
+      if(event.source&&event.source!=='manual')continue;
+      const same=previous&&previous.day===event.day&&previous.slot?.id===event.slot?.id&&event.at>=previous.at&&event.at-previous.at<5000;
+      streak=Number.isInteger(event.combo)?event.combo:same?streak+1:1;
+      const name=event.slot?.name.trim().normalize('NFC')||'';
+      best.set(name,Math.max(best.get(name)||0,streak));
+      previous=event;
+    }
+    return best;
+  }
   function stats(events,day) {
     const first=monday(day), last=shift(first,6);
     const week=events.filter(e=>e.day>=first && e.day<=last);
     const classes=week.filter(e=>e.slot);
     return {first,last,total:count(classes),outside:count(week.filter(e=>!e.slot)),subjects:rank(classes,e=>e.slot.name),hours:rank(classes,e=>e.hour)};
   }
-  return {count,uuid,key,shift,monday,time,minutes,days,active,tap,stats};
+  return {minuteSummary,bestCombos,count,uuid,key,shift,monday,time,minutes,days,active,tap,stats};
 })();
 if(typeof module!=='undefined') module.exports=Calm;

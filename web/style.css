@@ -81,3 +81,7 @@ html,body { width:100%; }
   .home .counter { align-self:end;max-width:640px; }
   .home .target-wrap { grid-row:2; }
 }
+
+.minute-row { font-size:14px; }
+.minute-row time { color:var(--muted); font-variant-numeric:tabular-nums; }
+.raw-log { white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.5 monospace; margin-top:12px; }
