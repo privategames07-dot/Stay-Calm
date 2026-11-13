@@ -15,7 +15,9 @@ cp ios/Info.plist "$app/Info.plist"
 plutil -lint "$app/Info.plist"
 xcrun lipo "$app/StayCalm" -verify_arch arm64
 file "$app/StayCalm"
-out="$PWD/dist/stay-calm-unsigned.ipa"
+build_number="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$app/Info.plist")"
+[[ "$build_number" =~ ^[1-9][0-9]*$ ]]
+out="$PWD/dist/stay-calm-${build_number}.ipa"
 (cd "$dest" && /usr/bin/zip -qr "$dest/stay-calm.ipa" Payload)
 mv "$dest/stay-calm.ipa" "$out"
 unzip -t "$out"

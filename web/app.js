@@ -68,12 +68,17 @@ function record(s,d){
 function field(label,control){const l=el('label',null,'field');l.append(document.createTextNode(label),control);return l;}
 function input(type,value){const n=el('input');n.type=type;n.value=value;return n;}
 function select(values,selected){const n=el('select');values.forEach(([v,label])=>{const o=el('option',label);o.value=v;o.selected=String(v)===String(selected);n.append(o);});return n;}
+function halfHourPicker(value,isEnd=false){
+  const minutes=Array.from({length:48},(_,i)=>(i+(isEnd?1:0))*30);
+  if(!minutes.includes(value))minutes.push(value); // Preserve previously entered exact times.
+  return select(minutes.sort((a,b)=>a-b).map(n=>[n,Calm.time(n)]),value);
+}
 function controls(s){
   const name=input('text',s.name);name.maxLength=100;name.autocomplete='off';const day=select(Calm.days.map((v,i)=>[i,v+'요일']),s.weekday);
-  const start=input('time',Calm.time(s.start)),end=input('time',Calm.time(s.end));const pair=el('div',null,'pair');pair.append(field('시작',start),field('종료',end));
+  const start=halfHourPicker(s.start),end=halfHourPicker(s.end,true);const pair=el('div',null,'pair');pair.append(field('시작',start),field('종료',end));
   return {nodes:[field('과목명',name),field('요일',day),pair],value(){
-    if(!name.value.trim()||!start.value||!end.value||start.value>=end.value)throw Error('과목명과 시작·종료 시간을 확인해줘.');
-    return {id:s.id||Calm.uuid(),name:name.value.trim(),weekday:Number(day.value),start:Calm.minutes(start.value),end:Calm.minutes(end.value)};
+    if(!name.value.trim()||!start.value||!end.value||+start.value>=+end.value)throw Error('과목명과 시작·종료 시간을 확인해줘.');
+    return {id:s.id||Calm.uuid(),name:name.value.trim(),weekday:Number(day.value),start:+start.value,end:+end.value};
   }};
 }
 function edit(s){const c=controls(s);const save=btn('저장',()=>{try{const v=c.value();const next=s.id?slots.map(x=>x.id===s.id?v:x):[...slots,v];if(saveSlots(next)){weekday=v.weekday;close();render();}}catch(e){message(e.message);}},'primary');
@@ -110,25 +115,69 @@ function statsView(){
 function settings(){
   screen.append(el('h1','설정'));const list=el('div',null,'list');
   [['haptics','탭 진동','버튼을 누를 때 가볍게 진동'],['effects','콤보 효과','파동과 붉은 배경, 콤보 숫자']].forEach(([k,title,desc])=>{const row=el('label',null,'row'),txt=el('span');txt.append(el('b',title),el('small',desc));const check=input('checkbox','');check.checked=options[k];check.onchange=()=>{const next={...options,[k]:check.checked};if(safely(()=>write('settings',next)))options=next;else check.checked=options[k];};row.append(txt,check);list.append(row);});
-  screen.append(list,sub('소리는 항상 꺼져 있어. 시간표와 기록은 이 기기에 저장돼.'),sub('stay calm! · 1.0'));
+  screen.append(list,sub('소리는 항상 꺼져 있어. 시간표와 기록은 이 기기에 저장돼.'),sub('stay calm! · 1.1 (2)'));
 }
 function startImport(){
   if(window.webkit?.messageHandlers?.timetable){window.webkit.messageHandlers.timetable.postMessage('pick');return;}
   const f=input('file','');f.accept='image/*';f.onchange=()=>{const file=f.files[0];if(file){const r=new FileReader();r.onload=()=>window.receiveTimetable(r.result,[]);r.readAsDataURL(file);}};f.click();
 }
 window.importFailure=s=>message(s);
+let pendingNames=null;
+window.receiveCourseNames=(token,groups)=>{
+  if(!pendingNames||pendingNames.token!==token||!sheet.open)return;
+  const {draft}=pendingNames;pendingNames=null;
+  draft.forEach((s,i)=>{const title=courseTitle(groups[i]||[]);if(title)s.name=title;});
+  review(draft);
+};
+sheet.addEventListener('close',()=>{pendingNames=null;});
+function readForReview(frame,words,grid){
+  const draft=scanCourses(frame,words,grid);
+  const native=window.webkit?.messageHandlers?.courseNames;
+  if(!native||!draft.length){review(draft);return;}
+  const regions=draft.map(s=>{
+    const day=(s.weekday+6)%7;
+    const timeY=t=>grid.top+(grid.bottom-grid.top)*(t-grid.start)/(grid.end-grid.start);
+    return [grid.edges[day],timeY(s.start),grid.edges[day+1],timeY(s.end)];
+  });
+  const token=Calm.uuid();
+  pendingNames={token,draft};
+  show('과목명 읽는 중',sub('수업 '+draft.length+'개의 이름을 확인하고 있어.'),btn('바로 수정하기',()=>{pendingNames=null;review(draft);},'secondary'));
+  native.postMessage({token,regions});
+}
 window.receiveTimetable=(src,words)=>{
-  const img=new Image();img.alt='시간표 캡처';const wrap=el('div',null,'gridpic');wrap.append(img);
-  const hint=sub('월요일 첫 시간 칸의 왼쪽 위를 눌러줘.');let points=[];
-  const hours=Array.from({length:25},(_,i)=>[i,i+'시']);
-  const start=select(hours.slice(0,24),9),end=select(hours.slice(1),18),columns=select([[5,'월–금'],[6,'월–토'],[7,'월–일']],5);
-  const times=el('div',null,'pair');times.append(field('맨 위 시각',start),field('맨 아래 시각',end));
-  img.style.maxHeight='none';img.onclick=e=>{const r=img.getBoundingClientRect();if(points.length===2)points=[];points.push([(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height]);hint.textContent=points.length===1?'마지막 요일 칸의 오른쪽 아래를 눌러줘.':'범위를 지정했어. 시각과 요일을 확인해줘.';};
-  const scan=btn('수업 읽기',()=>{if(points.length!==2||points[1][0]<=points[0][0]||points[1][1]<=points[0][1]||+end.value<=+start.value){hint.textContent='왼쪽 위와 오른쪽 아래, 시작·끝 시각을 확인해줘.';return;}
-    const result=readGrid(img,words,[...points[0],...points[1]],+start.value,+end.value,+columns.value);
-    review(result);},'primary');
-  img.onerror=()=>message('이미지를 열 수 없어. 다른 캡처를 선택해줘.');img.src=src;
-  show('에타 시간표 범위',hint,wrap,times,field('캡처에 보이는 요일',columns),scan);
+  const img=new Image();img.alt='시간표 캡처';
+  img.onerror=()=>message('이미지를 열 수 없어. 다른 캡처를 선택해줘.');
+  img.onload=()=>{
+    const frame=timetablePixels(img),auto=detectGrid(frame,words);
+    function manual(){
+      const hint=sub('월요일 첫 시간 칸의 왼쪽 위를 눌러줘.');let points=[];
+      const wrap=el('div',null,'gridpic');wrap.append(img);
+      const start=halfHourPicker(auto?.start??540),end=halfHourPicker(auto?.end??1140,true);
+      const columns=select([[5,'월–금'],[6,'월–토'],[7,'월–일']],auto?auto.edges.length-1:5);
+      const times=el('div',null,'pair');times.append(field('맨 위 시각',start),field('맨 아래 시각',end));
+      img.style.maxHeight='none';img.onclick=e=>{
+        const r=img.getBoundingClientRect();if(points.length===2)points=[];
+        points.push([(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height]);
+        hint.textContent=points.length===1?'마지막 요일 칸의 오른쪽 아래를 눌러줘.':'시각과 요일을 확인한 뒤 수업 읽기를 눌러줘.';
+      };
+      const scan=btn('수업 읽기',()=>{
+        if(points.length!==2||points[1][0]<=points[0][0]||points[1][1]<=points[0][1]||+end.value<=+start.value){hint.textContent='범위와 시작·끝 시각을 확인해줘.';return;}
+        const count=Number(columns.value),edges=Array.from({length:count+1},(_,i)=>points[0][0]+(points[1][0]-points[0][0])*i/count);
+        readForReview(frame,words,{edges,top:points[0][1],bottom:points[1][1],start:+start.value,end:+end.value});
+      },'primary');
+      show('시간표 범위 지정',hint,wrap,times,field('표에 보이는 요일',columns),scan);
+    }
+    if(!auto){manual();return;}
+    const count=scanCourses(frame,words,auto).length;
+    const hint=sub((auto.edges.length-1)+'개 요일 · 수업 '+count+'개 후보');
+    const start=halfHourPicker(auto.start),span=auto.end-auto.start;
+    for(const opt of start.options)opt.disabled=Number(opt.value)+span>1440;
+    const range=el('p',null,'sub');
+    function update(){range.textContent='표 시간 범위 '+Calm.time(+start.value)+'–'+Calm.time(+start.value+span);}
+    start.onchange=update;update();
+    const actions=el('div',null,'actions');actions.append(btn('수업 확인',()=>{const time=Number(start.value);readForReview(frame,words,{...auto,start:time,end:time+span});},'primary'),btn('범위 직접 지정',manual,'secondary'));
+    show('시간표 자동 인식',hint,field(auto.certain?'표의 첫 시각':'표의 첫 시각을 확인해줘',start),range,actions);
+  };img.src=src;
 };
 function review(proposal){
   const list=el('div'),editors=[];function add(s){const c=controls(s),box=el('div',null,'draft');const entry={c,box};editors.push(entry);box.append(...c.nodes,btn('이 항목 제외',()=>{box.remove();editors.splice(editors.indexOf(entry),1);},'secondary'));list.append(box);}
