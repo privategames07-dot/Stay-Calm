@@ -211,7 +211,7 @@ try{
   })()`);
   assert.deepEqual(skillLabels,{before:true,speedBefore:true,after:true});
   const inkCoverage=await evaluate(`(async()=>{
-    const shop=inventory();shop.levels={};shop.equipped={all:'ink'};write('shop',shop);go('참기');
+    const shop=inventory();shop.levels={};shop.equipped={all:'ink'};write('shop',shop);saveSlots([]);go('참기');
     for(let i=0;i<50;i++)document.querySelector('#tap').click();
     await new Promise(requestAnimationFrame);
     await new Promise(requestAnimationFrame);
