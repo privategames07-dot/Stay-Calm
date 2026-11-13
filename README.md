@@ -34,3 +34,7 @@ iOS 16 이상, arm64 iPhone 세로 화면을 대상으로 합니다. 빌드는 G
 IPA 파일명은 앱의 빌드 번호를 사용합니다. 이번 수정본은 19번이며 새 버전을 배포할 때 ios/Info.plist의 CFBundleVersion을 1씩 올립니다. 동일 버전의 빌드를 재실행하면 같은 번호를 사용합니다.
 
 설정의 **최신 버전 확인**에서 GitHub Releases를 엽니다. 공개 배포 시 Feather 소스 주소는 https://github.com/privategames07-dot/Stay-Calm/releases/latest/download/source.json 입니다. 같은 앱 식별자와 서명 팀으로 새 IPA를 덮어 설치합니다.
+
+## 안드로이드
+
+Android 8.0 이상에서 APK를 설치합니다. iPhone과 web 코드를 공유하고 사진 선택·진동·한국어 OCR은 Android 브리지로 연결합니다. APK 버전은 ios/Info.plist의 번호를 따릅니다. Build Android APK 워크플로가 서명, 에뮬레이터 테스트 후 기존 build-N 릴리스에 stay-calm-N.apk를 첨부합니다. 이번 APK는 빌드 환경에서 생성하는 테스트 키로 서명합니다. 이후 버전의 덮어 설치를 보장하려면 별도 비공개 배포키를 보관해 사용해야 합니다. iPhone에 저장된 기록은 기기별 데이터입니다.

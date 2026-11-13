@@ -135,3 +135,7 @@ iOS 배포는 빌드별 GitHub Release에 IPA·source.json·아이콘을 첨부�
 ## 빌드 19 · 펫 클릭 배수
 
 petPower는 내부 0~4를 화면 Lv.1~5로 표시한다. 기본 1배, 최대 5배이고 다중클릭과 500/2000/5000/10000 비용을 공유한다. 자동 점수는 pet(0~20) × (1+petPower) × 피버 배수다. 직접 클릭 점수는 tap만 참조한다. 기존 데이터의 petPower 누락은 0으로 처리한다.
+
+## Android 네이티브 구현
+
+android/app은 Java WebView와 ML Kit 한국어 인식 모델을 포함합니다. WebViewAssetLoader로 로컬 번들을 HTTPS 원점에서 열어 기록을 유지합니다. android-bridge.js가 기존 메시지 인터페이스를 연결합니다. 사진은 EXIF 방향을 보정하고 최대 2200px로 축소하며 전체 및 셀별 OCR을 동일 좌상단 좌표로 반환합니다. 인터넷 접근 없이 모델을 사용합니다. 앱 비활성화 시 펫 타이머를 멈춥니다. 테스트 키로 서명한 APK와 에뮬레이터 검증을 GitHub Actions에서 생성합니다.
