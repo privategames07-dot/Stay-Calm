@@ -1,0 +1,28 @@
+name: Build iPhone IPA
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'ios/**'
+      - 'web/**'
+      - 'scripts/build-ios.sh'
+      - '.github/workflows/build-ios.yml'
+permissions:
+  contents: read
+jobs:
+  iphone:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test timetable and records
+        run: node --test tests/core.cjs
+      - name: Compile for iPhone and package unsigned IPA
+        run: bash scripts/build-ios.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stay-calm-iphone
+          path: dist/stay-calm-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14
