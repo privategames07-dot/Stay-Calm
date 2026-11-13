@@ -26,9 +26,12 @@ function creditBalance(shop){
   }
   return Math.round(earned*10)/10-shop.skillSpent-Object.values(shop.paid).reduce((sum,cost)=>sum+cost,0);
 }
+function equippedEffect(shop,subject){
+  return shop.equipped[subject]||shop.equipped.all||'brake';
+}
 function shopView(subject=subjectKey(current(new Date()).slot)){
   const shop=inventory(), balance=creditBalance(shop);
-  const subjects=new Map([['outside','수업 외']]);
+  const subjects=new Map([['all','전체'],['outside','수업 외']]);
   for(const slot of slots)subjects.set(subjectKey(slot),slot.name);
   if(!subjects.has(subject))subject='outside';
   const chooser=select([...subjects],subject);
@@ -72,15 +75,18 @@ function shopView(subject=subjectKey(current(new Date()).slot)){
     latest.paid[item.id]=cheat?0:item.cost;
     if(safely(()=>write('shop',latest))){close();refresh();message(item.name+' 해금 완료');}
   }
-  const equipped=shop.equipped[subject]||'brake';
+  const equipped=equippedEffect(shop,subject);
+  const mixed=subject==='all'&&Object.values(shop.equipped).some(effect=>effect!==equipped);
   for(const item of effectCatalog){
     const owned=item.cost===0||Object.hasOwn(shop.paid,item.id);
-    const active=equipped===item.id;
+    const active=!mixed&&equipped===item.id;
     const row=el('div',null,'row shop-item'),info=el('span');
     info.append(el('b',item.name),el('small',item.detail));
     const action=btn(active?'적용 중':owned?'적용':item.cost.toLocaleString()+' 구매',()=>{
       if(!owned){purchase(item);return;}
-      const latest=inventory();latest.equipped[subject]=item.id;
+      const latest=inventory();
+      if(subject==='all')latest.equipped={all:item.id};
+      else latest.equipped[subject]=item.id;
       if(safely(()=>write('shop',latest)))refresh();
     },active?'secondary':owned?'primary':'secondary');
     action.disabled=active;row.append(info,action);screen.append(row);

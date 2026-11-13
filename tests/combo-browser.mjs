@@ -102,9 +102,13 @@ try{
     const free=creditBalance(inventory())===before;
     write('day.2020-01-01',Array(500).fill({}));
     const funded=creditBalance(inventory());buttons()[1].click();
-    return {canceled,shared,separate,free,cost:funded-creditBalance(inventory()),choices:document.querySelector('#screen select').options.length};
+    choose('all');buttons()[2].click();
+    const allApplied=[subjectKey(a),subjectKey(b),'outside','course:새 과목'].every(k=>equippedEffect(inventory(),k)==='bolt');
+    choose(subjectKey(b));buttons()[0].click();
+    choose('all');const mixed=!buttons()[2].disabled&&equippedEffect(inventory(),subjectKey(b))==='brake';
+    return {allApplied,mixed,canceled,shared,separate,free,cost:funded-creditBalance(inventory()),choices:document.querySelector('#screen select').options.length};
   })()`);
-  assert.deepEqual(shopChecks,{canceled:true,shared:true,separate:true,free:true,cost:500,choices:3});
+  assert.deepEqual(shopChecks,{canceled:true,shared:true,separate:true,free:true,cost:500,choices:4,allApplied:true,mixed:true});
   const growth=await evaluate(`(async()=>{
     const before=creditBalance(inventory());
     document.querySelector('.wallet').closest('main').querySelector('.row button').click();
