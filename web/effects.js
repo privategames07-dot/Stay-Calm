@@ -16,6 +16,7 @@ const ComboEffects = (() => {
     const ctx=canvas.getContext('2d');
     const reduce=matchMedia('(prefers-reduced-motion: reduce)');
     let particles=[],frame=0,previous=0,phase=-Math.PI/2;
+    let coverage=0,contacts=0,nextEmission=0;
     let width=0,height=0,radius=0,burstTimer,restoreTimer,flight=null,lettering=null;
     const ink=disc.querySelector('.ink');
     const hot=['#ffbd46','#ff8735','#f85625','#ffcc5b'];
@@ -37,6 +38,17 @@ const ComboEffects = (() => {
       frame=0;
       const dt=Math.min(.04,Math.max(0,(now-previous)/1000));previous=now;
       ctx.clearRect(0,0,width,height);
+      if(contacts){
+        phase=(phase+dt*(1.8+coverage*1.8))%tau;
+        const span=tau*coverage;
+        // A continuous hot rim sits beneath the individual clockwise trails.
+        ctx.lineCap='round';
+        for(const [stroke,thickness] of [['rgba(255,105,27,.22)',8],['#ff8e30',3.5],['#ffe6a1',1.4]]){
+          ctx.strokeStyle=stroke;ctx.lineWidth=thickness;
+          ctx.beginPath();ctx.arc(width/2,height/2,radius,phase,phase+span);ctx.stroke();
+        }
+        if(now>=nextEmission){emitSparks();nextEmission=now+55;}
+      }
       particles=particles.filter(p=>p.age+dt<p.life);
       ctx.lineCap='round';
       for(const p of particles){
@@ -50,24 +62,25 @@ const ComboEffects = (() => {
         ctx.fillStyle='#fff1a4';ctx.fillRect(x-.65,y-.65,1.3,1.3);
       }
       ctx.globalAlpha=1;
-      if(particles.length)frame=requestAnimationFrame(draw);
+      if(particles.length||contacts)frame=requestAnimationFrame(draw);
     }
     function wake(){
       if(!ctx)return;
-      if(particles.length>220)particles.splice(0,particles.length-220);
       if(!frame){previous=performance.now();frame=requestAnimationFrame(draw);}
     }
-    function sparks(n){
-      phase=(phase+.32)%tau;
-      const intensity=Math.min(1,Math.log2(1+n/3)/5),contacts=1+Math.floor(intensity*3);
+    function emitSparks(){
       for(let j=0;j<contacts;j++){
-        for(let i=0;i<3+intensity*4;i++){
-          const a=phase+j*tau/contacts+(Math.random()-.5)*.13;
-          const v=tangent(a,radius*(1.0+intensity+Math.random()*1.4),radius*(.05+Math.random()*.13));
-          particles.push({x:radius*Math.cos(a),y:radius*Math.sin(a),...v,age:0,life:.18+Math.random()*.25,
-            color:hot[i%hot.length],trail:.035+Math.random()*.025,thick:1+Math.random()*1.4,drag:2,gravity:radius*.55});
-        }
+        const angle=phase+(j+Math.random()*.65)*tau*coverage/contacts;
+        const v=tangent(angle,radius*(1.0+coverage+Math.random()*1.35),radius*(.04+Math.random()*.22));
+        particles.push({x:radius*Math.cos(angle),y:radius*Math.sin(angle),...v,age:0,life:.20+Math.random()*.23,
+          color:hot[j%hot.length],trail:.035+Math.random()*.025,thick:1+Math.random()*1.4,drag:2,gravity:radius*.55});
       }
+      // Reserve space for milestone fireworks even during sustained tapping.
+      if(particles.length>400)particles.splice(0,particles.length-400);
+    }
+    function sparks(n){
+      coverage=Math.min(1,n/50);
+      contacts=Math.ceil(40*coverage);
       wake();
     }
     function firework(x,y,color,count){
@@ -111,6 +124,7 @@ const ComboEffects = (() => {
         if(milestone(n))celebrate(n,reduce.matches);
         if(!reduce.matches&&ctx)sparks(n);
       },
+      endStreak(){contacts=0;coverage=0;nextEmission=0;},
       destroy(){
         clearAward();observer.disconnect();cancelAnimationFrame(frame);particles=[];
         canvas.remove();banner.remove();
