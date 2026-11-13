@@ -115,7 +115,8 @@ def main():
     with open("ios/Info.plist", "rb") as stream:
         current = int(plistlib.load(stream)["CFBundleVersion"])
     tools = pathlib.Path(os.environ["ANDROID_HOME"]) / "build-tools/35.0.0"
-    signing = pathlib.Path.home() / ".android/debug.keystore"
+    signing = pathlib.Path(os.environ["ANDROID_TEST_KEYSTORE"])
+    assert signing.is_file()
     releases = json.loads(run("gh", "api", f"repos/{repo}/releases?per_page=100"))
     for release in sorted(releases, key=lambda r: r["created_at"]):
         match = re.fullmatch(r"build-(\d+)", release["tag_name"])
